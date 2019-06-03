@@ -16,36 +16,40 @@ class Encoder(nn.Module):
     def forward(self, sequence, sequence_lengths):
         #TODO(jerin): Add dropout
         x = self.embed_tokens(sequence)
+        batch_size, seq_len, _ = x.size()
         x = x.transpose(0, 1) 
-        batch_size, seq_len, _ = embedded.size()
 
         scale = 2 if self.args.encoder_bidirectional else 1
         state_size = (
-                    scale * args.encoder_num_layers, 
-                    batch_size, args.encoder_hidden_size
+                    scale * self.args.encoder_num_layers, 
+                    batch_size, self.args.encoder_hidden_size
         )
+
         h0 = x.new_zeros(*state_size)
         c0 = x.new_zeros(*state_size)
 
-        packed_x = nn.utils.rnn.pack_padded_sequence(x, sequence_lengths.data.tolist())
-        packed_outs, (h_final, c_final) = lstm(
-                packed_x, (h0, c0)
-        )
+        packed_x = nn.utils.rnn.pack_padded_sequence(x, 
+                sequence_lengths.data.tolist())
+        
+        packed_outs, (h_final, c_final) = self.lstm(packed_x, (h0, c0))
 
-        x, _  = nn.utils.rnn.pack_padded_sequence(
+        x, _  = nn.utils.rnn.pad_packed_sequence(
                 packed_outs, padding_value=self.dictionary.pad()
         )
 
-        if self.args.bidirectional:
+        if self.args.encoder_bidirectional:
             def combine_bidir(outs):
-                out = outs.view(self.num_layers, 2, bsz, -1).transpose(1, 2).contiguous()
-                return out.view(self.num_layers, bsz, -1)
+                out = (outs.view(self.args.encoder_num_layers, 2, batch_size, -1)
+                        .transpose(1, 2).contiguous())
+                return out.view(self.args.encoder_num_layers, batch_size, -1)
 
             h_final = combine_bidir(h_final)
             c_final = combine_bidir(c_final)
 
         return {
-            "encoder_out": (x, h_final, c_final)
+            "encoder_out": x,
+            "encoder_hidden": h_final, 
+            "encoder_cell": c_final
         }
 
 
@@ -108,8 +112,17 @@ class EmbeddingModel(nn.Module):
         self.criterion = criterion
 
     @classmethod
-    def build(cls, args):
+    def build(cls, args, dictionary):
         # Load dictionary
 
         # Create Enc, Dec, Generator, Loss
+        embed_tokens = nn.Embedding(len(dictionary), args.encoder_embedding_dim)
+        encoder = Encoder(args, embed_tokens, dictionary)
+        decoder = None
+        generator = None
+        criterion = None
         return cls(encoder, decoder, generator, criterion)
+
+    def forward(self, _input):
+        encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
+        return encoder_output

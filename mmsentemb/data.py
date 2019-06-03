@@ -45,19 +45,22 @@ class ParallelDataset:
                 idxs, lang_idxs = first
                 return idxs.size(0)
 
-            samples = sorted(samples, key=fseq_length)
+            samples = sorted(samples, key=fseq_length, reverse=True)
             first, second = list(zip(*samples))
-            fidxs, flang_idxs = list(zip(*first))
-            sidxs, slang_idxs = list(zip(*second))
-            fseq_lengths = torch.LongTensor([f.size(0) for f in fidxs])
 
-            fidxs = torch.nn.utils.rnn.pad_sequence(fidxs, 
-                    padding_value=self.dictionary.pad())
-            sidxs = torch.nn.utils.rnn.pad_sequence(sidxs, 
-                    padding_value=self.dictionary.pad())
+            def _extract(one):
+                idxs, lang_idxs = list(zip(*one))
+                seq_lengths = [sample.size(0) for sample in idxs]
+                seq_lengths = torch.LongTensor(seq_lengths)
+                idxs = torch.nn.utils.rnn.pad_sequence(idxs, 
+                        padding_value=self.dictionary.pad())
 
-            flang_idxs = torch.stack(flang_idxs, dim=0)
-            slang_idxs = torch.stack(slang_idxs, dim=0)
+                idxs = idxs.transpose(0, 1).contiguous()
+                lang_idxs = torch.stack(lang_idxs, dim=0)
+                return idxs, lang_idxs, seq_lengths
+
+            fidxs, flang_idxs, fseq_lengths = _extract(first)
+            sidxs, slang_idxs, sseq_lengths = _extract(second)
 
             export = {
                 "srcs": fidxs,

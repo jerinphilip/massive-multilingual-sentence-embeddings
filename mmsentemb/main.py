@@ -3,7 +3,7 @@ import os
 import sys
 from fairseq.data.dictionary import Dictionary
 import ilmulti as ilm
-from .models import Encoder, Decoder, EmbeddingModel
+from .models import EmbeddingModel
 from .data import ParallelDataset
 from torch.utils.data import DataLoader
 
@@ -13,6 +13,10 @@ def add_args(parser):
     parser.add_argument('--source_lang', type=str, required=True)
     parser.add_argument('--target', type=str, required=True)
     parser.add_argument('--target_lang', type=str, required=True)
+    parser.add_argument('--encoder_embedding_dim', type=int, default=512)
+    parser.add_argument('--encoder_hidden_size', type=int, default=512)
+    parser.add_argument('--encoder_num_layers', type=int, default=3)
+    parser.add_argument('--encoder_bidirectional', type=bool, default=True)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -28,9 +32,13 @@ if __name__ == '__main__':
     )
 
     loader = DataLoader(dataset, collate_fn=dataset.collate(), batch_size=4)
+    model = EmbeddingModel.build(args, dictionary)
     for sample in loader:
-        for key in sample:
-            print(key, sample[key].size())
+        # for key in sample:
+        #     print(key, sample[key].size())
+        # break
+        output = model(sample)
+        print(output)
         break
 
 
