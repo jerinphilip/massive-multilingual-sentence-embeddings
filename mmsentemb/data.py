@@ -21,13 +21,17 @@ class ParallelDataset:
         return len(self.first.lines)
 
     def __getitem__(self, idx):
-        def _get(one, idx):
+        def _get(one, idx, eos_end=True):
             line = one.lines[idx]
             lang, tokens = self.tokenizer(line)
             idxs = [self.dictionary.index(token) for token in tokens]
+            if eos_end:
+                idxs.append(self.dictionary.eos())
+            else:
+                idxs.insert(0, self.dictionary.eos())
             lang_token = ilm.utils.language_token(one.lang)
             lang_idx = self.dictionary.index(lang_token)
-            return (torch.LongTensor(idxs), torch.LongTensor(lang_idx))
+            return (torch.LongTensor(idxs), torch.LongTensor([lang_idx]))
 
         first = _get(self.first, idx)
         second = _get(self.second, idx)
@@ -45,15 +49,22 @@ class ParallelDataset:
             first, second = list(zip(*samples))
             fidxs, flang_idxs = list(zip(*first))
             sidxs, slang_idxs = list(zip(*second))
-            fseq_lengths = [f.size(0) for f in fidxs]
+            fseq_lengths = torch.LongTensor([f.size(0) for f in fidxs])
 
             fidxs = torch.nn.utils.rnn.pad_sequence(fidxs, 
                     padding_value=self.dictionary.pad())
-            sidxs = torch.nn.utils.rnn.pad_sequence(fidxs, 
+            sidxs = torch.nn.utils.rnn.pad_sequence(sidxs, 
                     padding_value=self.dictionary.pad())
 
-            flang_idxs = torch.stack(flang_idxs)
-            slang_idxs = torch.stack(slang_idxs)
+            flang_idxs = torch.stack(flang_idxs, dim=0)
+            slang_idxs = torch.stack(slang_idxs, dim=0)
 
-            return (fidxs, fseq_lengths, flang_idxs, sidxs, slang_idxs)
+            export = {
+                "srcs": fidxs,
+                "tgts": sidxs,
+                "src_lens": fseq_lengths,
+                "src_langs": flang_idxs,
+                "tgt_langs": slang_idxs
+            }
+            return export
         return _collate

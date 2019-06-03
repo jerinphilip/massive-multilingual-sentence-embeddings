@@ -14,7 +14,6 @@ def add_args(parser):
     parser.add_argument('--target', type=str, required=True)
     parser.add_argument('--target_lang', type=str, required=True)
 
-
 if __name__ == '__main__':
     parser = ArgumentParser()
     add_args(parser)
@@ -30,6 +29,8 @@ if __name__ == '__main__':
 
     loader = DataLoader(dataset, collate_fn=dataset.collate(), batch_size=4)
     for sample in loader:
-        print(sample)
+        for key in sample:
+            print(key, sample[key].size())
         break
+
 
