@@ -21,8 +21,8 @@ class Encoder(nn.Module):
 
         scale = 2 if self.args.encoder_bidirectional else 1
         state_size = (
-                    scale * self.args.encoder_num_layers, 
-                    batch_size, self.args.encoder_hidden_size
+            scale * self.args.encoder_num_layers, 
+            batch_size, self.args.encoder_hidden_size
         )
 
         h0 = x.new_zeros(*state_size)
@@ -47,9 +47,9 @@ class Encoder(nn.Module):
             c_final = combine_bidir(c_final)
 
         return {
-            "encoder_out": x,
-            "encoder_hidden": h_final, 
-            "encoder_cell": c_final
+            "encoder_outs": x,
+            "encoder_hiddens": h_final, 
+            "encoder_cells": c_final
         }
 
 
@@ -59,22 +59,32 @@ class Decoder(nn.Module):
         self.args = args
         self.embed_tokens = embed_tokens
         self.dictionary = dictionary
+
+        scale = 2 if self.args.encoder_bidirectional else 1
+        self.input_size = (
+                args.decoder_embedding_dim +  # token
+                args.decoder_embedding_dim +  # language
+                scale*args.encoder_hidden_size
+        )
+
         self.lstm = nn.LSTM(
-                args.decoder_embedding_dim, args.decoder_hidden_size, 
+                self.input_size, args.decoder_hidden_size, 
                 num_layers=args.decoder_num_layers, bidirectional=False
         )
 
 
-    def forward(self, source_languages, prev_output_tokens, encoder_out):
-        encoder_outs, encoder_hiddens, encoder_cells = encoder_outs
-        srclen = encoder_outs.size()
+    def forward(self, tgt_langs, prev_output_tokens, encoder_dict):
+        encoder_outs = encoder_dict["encoder_outs"]
+        encoder_hiddens = encoder_dict["encoder_hiddens"]
+        encoder_cells = encoder_dict["encoder_cells"]
+        srclen, batch_size, _ = encoder_outs.size()
+        # print(encoder_outs.size())
 
-        # B x T x H
-        context = encoder_outs[:, -1, :]
-        # Discarding fairseq's incremental stuff.
+        # T x B x H
+        context = encoder_outs[-1, :, :]
         batch_size, seqlen = prev_output_tokens.size()
         x = self.embed_tokens(prev_output_tokens)
-        lang_embed = self.embed_tokens(source_languages)
+        lang_embed = self.embed_tokens(tgt_langs)
         # TODO(jerin): Dropout
 
         # B x T x H -> T x B x H
@@ -82,15 +92,20 @@ class Decoder(nn.Module):
 
         h0 = encoder_hiddens
         c0 = encoder_cells
+        outs = []
         for j in range(seqlen):
             # Take only final hidden.
             # Concatenate with language idx_embedding
             # Concatenate with current_token_embeddding
-            decoder_input = torch.cat([
-                    x[j, :, :],
-                    context,
-                    lang_embed
-                ], dim=1)
+            # print(x[j, :, :].size())
+            # print(lang_embed.size())
+            # print(context.size())
+            decoder_input = torch.cat([ 
+                x[j, :, :], lang_embed, context
+            ], dim=1)
+
+            # T=1 x B x H
+            decoder_input = decoder_input.unsqueeze(0)
 
             # TODO(jerin): These might require projections
             decoder_outs, (h_final, c_final) = self.lstm(decoder_input, (h0, c0))
@@ -114,15 +129,15 @@ class EmbeddingModel(nn.Module):
     @classmethod
     def build(cls, args, dictionary):
         # Load dictionary
-
         # Create Enc, Dec, Generator, Loss
         embed_tokens = nn.Embedding(len(dictionary), args.encoder_embedding_dim)
         encoder = Encoder(args, embed_tokens, dictionary)
-        decoder = None
+        decoder = Decoder(args, embed_tokens, dictionary)
         generator = None
         criterion = None
         return cls(encoder, decoder, generator, criterion)
 
     def forward(self, _input):
         encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
-        return encoder_output
+        decoder_output = self.decoder(_input["tgt_langs"], _input["tgts"], encoder_output)
+        return decoder_output

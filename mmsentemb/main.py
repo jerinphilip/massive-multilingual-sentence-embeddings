@@ -17,6 +17,12 @@ def add_args(parser):
     parser.add_argument('--encoder_hidden_size', type=int, default=512)
     parser.add_argument('--encoder_num_layers', type=int, default=3)
     parser.add_argument('--encoder_bidirectional', type=bool, default=True)
+    parser.add_argument('--decoder_embedding_dim', type=int, default=512)
+
+    # Set this to 2 * encoder
+    parser.add_argument('--decoder_hidden_size', type=int, default=1024)
+    parser.add_argument('--decoder_num_layers', type=int, default=3)
+    parser.add_argument('--decoder_bidirectional', type=bool, default=False)
 
 if __name__ == '__main__':
     parser = ArgumentParser()

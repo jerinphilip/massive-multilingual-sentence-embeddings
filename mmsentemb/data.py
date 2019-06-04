@@ -34,7 +34,7 @@ class ParallelDataset:
             return (torch.LongTensor(idxs), torch.LongTensor([lang_idx]))
 
         first = _get(self.first, idx)
-        second = _get(self.second, idx)
+        second = _get(self.second, idx, eos_end=False)
 
         return (first, second)
 
@@ -56,7 +56,7 @@ class ParallelDataset:
                         padding_value=self.dictionary.pad())
 
                 idxs = idxs.transpose(0, 1).contiguous()
-                lang_idxs = torch.stack(lang_idxs, dim=0)
+                lang_idxs = torch.cat(lang_idxs, dim=0)
                 return idxs, lang_idxs, seq_lengths
 
             fidxs, flang_idxs, fseq_lengths = _extract(first)
