@@ -1,4 +1,5 @@
 from torch.nn.utils.clip_grad import clip_grad_norm_
+import torch
 
 class Trainer:
     def __init__(self, args, model, optimizer, logger):
@@ -19,5 +20,12 @@ class Trainer:
         self.optimizer.step()
         return loss.item()
 
+
+    def debug(self, batch):
+        gout = self.model.get_generator_output(batch)
+        _max, argmax = torch.max(gout, dim=2)
+        argmax = argmax.transpose(0, 1).contiguous()
+        print(argmax) 
+        print(batch["tgts"][:, 1:])
 
 

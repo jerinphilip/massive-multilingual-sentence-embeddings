@@ -3,6 +3,8 @@ from torch.utils.data import Dataset
 import torch
 import ilmulti as ilm
 from collections import namedtuple
+import random
+from copy import deepcopy
 
 class ParallelDataset:
     def __init__(self, first, second, tokenizer, dictionary):
@@ -53,11 +55,12 @@ class ParallelDataset:
 
     def __getitem__(self, idx):
         def to_tensor(sample, eos_end=True):
-            idxs, lang_idx = sample
+            idxs, lang_idx = deepcopy(sample)
             if eos_end:
                 idxs.append(self.dictionary.eos())
             else:
                 idxs.insert(0, self.dictionary.eos())
+                idxs.append(self.dictionary.eos())
             return torch.LongTensor(idxs), torch.LongTensor([lang_idx])
 
 
@@ -97,7 +100,8 @@ def collate(dictionary):
             "src_langs": flang_idxs,
             "tgt_langs": slang_idxs,
             "batch_size": batch_size,
-            "num_tokens": fseq_lengths.sum().item()
+            "src_num_tokens": fseq_lengths.sum().item(),
+            "tgt_num_tokens": sseq_lengths.sum().item() 
         }
         return export
     return _collate
@@ -130,11 +134,12 @@ def compute_tokenized_lengths(_file, tokenizer):
         return export
 
 class EpochBatchIterator:
-    def __init__(self, dataset, collate_fn, max_tokens):
+    def __init__(self, dataset, collate_fn, max_tokens, shuffle=False):
         self.dataset = dataset
         self.collate = collate_fn
         self.max_tokens = max_tokens
         self._preconditions()
+        self.shuffle = shuffle
 
     def _preconditions(self):
         def chunks(lengths):
@@ -163,17 +168,18 @@ class EpochBatchIterator:
 
         print("Obtaining batches")
         self.batches = list(chunks(flattened))
+        print("Obtained batches")
 
     def __iter__(self):
-        print("Obtained batches")
         self.idx = -1
+        if self.shuffle:
+            random.shuffle(self.batches)
         return self
 
     def __next__(self):
         self.idx += 1
         if self.idx < len(self.batches):
             s, v = self.batches[self.idx]
-            # print(s, v)
             idxs = list(range(s, v))
             samples = [self.dataset[idx] for idx in idxs]
             return self.collate(samples)

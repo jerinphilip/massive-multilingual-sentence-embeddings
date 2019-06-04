@@ -93,7 +93,7 @@ class Decoder(nn.Module):
         h0 = encoder_hiddens
         c0 = encoder_cells
         outs = []
-        for j in range(seqlen-1):
+        for j in range(seqlen):
             # Take only final hidden.
             # Concatenate with language idx_embedding
             # Concatenate with current_token_embeddding
@@ -166,13 +166,16 @@ class EmbeddingModel(nn.Module):
         criterion = TCELoss(dictionary)
         return cls(encoder, decoder, generator, criterion)
 
-    def forward(self, _input):
+    def get_generator_output(self, _input):
         encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
         decoder_output = self.decoder(_input["tgt_langs"], _input["tgts"], encoder_output)
         generator_output = self.generator(decoder_output)
+        return generator_output
 
-        # B x T -> B x T - 1
+    def forward(self, _input):
+        generator_output = self.get_generator_output(_input)
+        shifted_gen_outputs = generator_output[:-1, :, :]
         shifted_tgts = _input["tgts"][:, 1:]
-        shifted_gen_outputs = generator_output[1:, :, ]
-        loss_output = self.criterion(generator_output, shifted_tgts)
+        # print(shifted_tgts.size(), shifted_gen_outputs.size())
+        loss_output = self.criterion(shifted_gen_outputs, shifted_tgts)
         return loss_output

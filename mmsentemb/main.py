@@ -60,13 +60,16 @@ if __name__ == '__main__':
     loader = EpochBatchIterator(
         dataset, 
         collate_fn=collate(dictionary), 
-        max_tokens=args.max_tokens
+        max_tokens=args.max_tokens,
+        shuffle=False
     )
+
+    # loader = DataLoader(dataset, collate_fn=collate(dictionary), batch_size=5, shuffle=False)
 
     device = torch.device('cuda:1') if torch.cuda.is_available() else torch.device("cpu")
 
     model = EmbeddingModel.build(args, dictionary)
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     logger = None
     trainer = Trainer(args, model, optimizer, logger)
     trainer.to(device)
@@ -74,11 +77,12 @@ if __name__ == '__main__':
 
     for epoch in trange(args.num_epochs, leave=True):
         loss_sum = 0
-        pbar = tqdm(enumerate(loader), total=len(loader))
+        pbar = tqdm(enumerate(iter(loader)), total=len(loader), ascii='#', leave=True)
         for batch_idx, batch in pbar:
             for key in batch:
                 if isinstance(batch[key], torch.Tensor):
                     batch[key] = batch[key].to(device)
+                    # print(key, batch[key].size())
             loss = trainer.run_update(batch)
             loss_sum += loss
             if batch_idx % args.update_every == 0:
@@ -87,10 +91,21 @@ if __name__ == '__main__':
                     "epoch": epoch,
                     "update": batch_idx,
                     "lpb": loss_sum/(batch_idx+1),
-                    "lpt": loss_sum/((batch_idx+1)*batch["num_tokens"])
+                    "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
+                    "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
+                    "src_toks": batch["src_num_tokens"],
+                    "tgt_toks": batch["tgt_num_tokens"]
                 }
                 # log_dict(state_dict)
                 pbar.set_postfix(**state_dict)
+
+    batch = next(iter(loader))
+    for key in batch:
+        if isinstance(batch[key], torch.Tensor):
+            batch[key] = batch[key].to(device)
+    trainer.debug(batch)
+
+
 
 
 
