@@ -28,6 +28,7 @@ def add_args(parser):
     parser.add_argument('--decoder_bidirectional', type=bool, default=False)
     parser.add_argument('--decoder_output_size', type=int, default=1024)
     parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--clip_grad_norm', type=float, default=5)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -53,7 +54,8 @@ if __name__ == '__main__':
     loader = DataLoader(dataset, collate_fn=collate(dictionary), batch_size=args.batch_size)
     model = EmbeddingModel.build(args, dictionary)
     optimizer = optim.Adam(model.parameters())
-    trainer = Trainer(model, optimizer)
+    logger = None
+    trainer = Trainer(args, model, optimizer, logger)
     for batch_idx, batch in enumerate(loader):
         loss = trainer.run_update(batch)
         if batch_idx % 10 == 0:
