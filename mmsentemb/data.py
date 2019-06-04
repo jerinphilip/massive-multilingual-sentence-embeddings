@@ -62,12 +62,14 @@ class ParallelDataset:
             fidxs, flang_idxs, fseq_lengths = _extract(first)
             sidxs, slang_idxs, sseq_lengths = _extract(second)
 
+            batch_size = fidxs.size(0)
             export = {
                 "srcs": fidxs,
                 "tgts": sidxs,
                 "src_lens": fseq_lengths,
                 "src_langs": flang_idxs,
-                "tgt_langs": slang_idxs
+                "tgt_langs": slang_idxs,
+                "batch_size": batch_size
             }
             return export
         return _collate

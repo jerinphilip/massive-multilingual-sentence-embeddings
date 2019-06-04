@@ -137,7 +137,7 @@ class TCELoss(nn.Module):
         T, B, H = logits.size()
         _B, _T = classes.size()
 
-        print(logits.size(), classes.size())
+        # print(logits.size(), classes.size())
 
         # T x B x H -> B x T x H
         logits = logits.transpose(0, 1)

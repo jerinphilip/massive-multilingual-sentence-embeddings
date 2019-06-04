@@ -1,11 +1,14 @@
-from argparse import ArgumentParser
 import os
 import sys
+from argparse import ArgumentParser
+from torch.utils.data import DataLoader
+from torch import optim
 from fairseq.data.dictionary import Dictionary
+
 import ilmulti as ilm
 from .models import EmbeddingModel
 from .data import ParallelDataset
-from torch.utils.data import DataLoader
+from .trainer import Trainer
 
 def add_args(parser):
     parser.add_argument('--dict_path', type=str, required=True)
@@ -24,6 +27,7 @@ def add_args(parser):
     parser.add_argument('--decoder_num_layers', type=int, default=3)
     parser.add_argument('--decoder_bidirectional', type=bool, default=False)
     parser.add_argument('--decoder_output_size', type=int, default=1024)
+    parser.add_argument('--batch_size', type=int, default=64)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -38,14 +42,13 @@ if __name__ == '__main__':
             dictionary
     )
 
-    loader = DataLoader(dataset, collate_fn=dataset.collate(), batch_size=4)
+    loader = DataLoader(dataset, collate_fn=dataset.collate(), batch_size=args.batch_size)
     model = EmbeddingModel.build(args, dictionary)
-    for sample in loader:
-        # for key in sample:
-        #     print(key, sample[key].size())
-        # break
-        output = model(sample)
-        print(output)
-        break
+    optimizer = optim.Adam(model.parameters())
+    trainer = Trainer(model, optimizer)
+    for batch_idx, batch in enumerate(loader):
+        loss = trainer.run_update(batch)
+        if batch_idx % 10 == 0:
+            print(loss)
 
 
