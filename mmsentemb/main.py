@@ -51,11 +51,17 @@ if __name__ == '__main__':
 
     dataset = ConcatDataset([first_dataset, second_dataset])
 
-    loader = DataLoader(dataset, collate_fn=collate(dictionary), batch_size=args.batch_size)
+    loader = DataLoader(
+        dataset, 
+        collate_fn=collate(dictionary), 
+        batch_size=args.batch_size, 
+        shuffle=False
+    )
     model = EmbeddingModel.build(args, dictionary)
     optimizer = optim.Adam(model.parameters())
     logger = None
     trainer = Trainer(args, model, optimizer, logger)
+    print("Starting training")
     for batch_idx, batch in enumerate(loader):
         loss = trainer.run_update(batch)
         if batch_idx % 10 == 0:
