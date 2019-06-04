@@ -5,6 +5,6 @@ python3 -m mmsentemb.main \
     --target data/cricket/train.hi \
     --target_lang hi \
     --dict_path data/dicts/central.dict \
-    --max_tokens 784 \
+    --max_tokens 1024 \
     --num_epochs 200
 

@@ -158,17 +158,11 @@ class EpochBatchIterator:
 
                 yield (start, idx)
 
-        lengths_ls = [
-            dataset.export["lens"] 
-            for dataset in self.dataset.datasets
-        ]
-        flattened = []
-        for lengths in lengths_ls:
-            flattened.extend(lengths)
-
+        lengths = self.dataset.export["lens"] 
         print("Obtaining batches")
-        self.batches = list(chunks(flattened))
-        print("Obtained batches")
+        self.batches = list(chunks(lengths))
+        self.toks = [sum(lengths[s:v]) for s, v in self.batches]
+        print("Obtained {} batches".format(len(self.batches)))
 
     def __iter__(self):
         self.idx = -1
