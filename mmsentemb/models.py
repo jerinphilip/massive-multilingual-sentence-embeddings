@@ -93,7 +93,7 @@ class Decoder(nn.Module):
         h0 = encoder_hiddens
         c0 = encoder_cells
         outs = []
-        for j in range(seqlen):
+        for j in range(seqlen-1):
             # Take only final hidden.
             # Concatenate with language idx_embedding
             # Concatenate with current_token_embeddding
@@ -114,8 +114,36 @@ class Decoder(nn.Module):
             c0 = c_final
 
         # T x B x H 
-        x = torch.stack(outs, dim=0)
+        x = torch.cat(outs, dim=0)
         return x
+
+
+class Generator(nn.Module):
+    def __init__(self, args, dictionary):
+        super().__init__()
+        self.args = args
+        self.dictionary = dictionary
+        self.project = nn.Linear(args.decoder_output_size, len(dictionary))
+
+    def forward(self, x):
+        return self.project(x)
+
+class TCELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.criterion = nn.CrossEntropyLoss(reduction='sum')
+
+    def forward(self, logits, classes):
+        T, B, H = logits.size()
+        _B, _T = classes.size()
+
+        print(logits.size(), classes.size())
+
+        # T x B x H -> B x T x H
+        logits = logits.transpose(0, 1)
+        logits = logits.contiguous().view(T*B, H)
+        classes = classes.contiguous().view(-1)
+        return self.criterion(logits, classes)
 
 
 class EmbeddingModel(nn.Module):
@@ -133,11 +161,17 @@ class EmbeddingModel(nn.Module):
         embed_tokens = nn.Embedding(len(dictionary), args.encoder_embedding_dim)
         encoder = Encoder(args, embed_tokens, dictionary)
         decoder = Decoder(args, embed_tokens, dictionary)
-        generator = None
-        criterion = None
+        generator = Generator(args, dictionary)
+        criterion = TCELoss()
         return cls(encoder, decoder, generator, criterion)
 
     def forward(self, _input):
         encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
         decoder_output = self.decoder(_input["tgt_langs"], _input["tgts"], encoder_output)
-        return decoder_output
+        generator_output = self.generator(decoder_output)
+
+        # B x T -> B x T - 1
+        shifted_tgts = _input["tgts"][:, 1:]
+        shifted_gen_outputs = generator_output[1:, :, ]
+        loss_output = self.criterion(generator_output, shifted_tgts)
+        return loss_output

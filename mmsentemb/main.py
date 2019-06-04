@@ -23,6 +23,7 @@ def add_args(parser):
     parser.add_argument('--decoder_hidden_size', type=int, default=1024)
     parser.add_argument('--decoder_num_layers', type=int, default=3)
     parser.add_argument('--decoder_bidirectional', type=bool, default=False)
+    parser.add_argument('--decoder_output_size', type=int, default=1024)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
