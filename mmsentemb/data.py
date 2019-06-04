@@ -10,6 +10,7 @@ class ParallelDataset:
         self.dictionary = dictionary
         _first_file, _ = first
         export = compute_tokenized_lengths(_first_file, tokenizer)
+        self.export = export
         idxs = export["idxs"]
         self.first = self._load(first, idxs=idxs)
         self.second = self._load(second, idxs=idxs)
@@ -95,7 +96,8 @@ def collate(dictionary):
             "src_lens": fseq_lengths,
             "src_langs": flang_idxs,
             "tgt_langs": slang_idxs,
-            "batch_size": batch_size
+            "batch_size": batch_size,
+            "num_tokens": fseq_lengths.sum().item()
         }
         return export
     return _collate
@@ -126,3 +128,57 @@ def compute_tokenized_lengths(_file, tokenizer):
         torch.save(export, save_path)
         print("{} computed and saved.".format(save_path))
         return export
+
+class EpochBatchIterator:
+    def __init__(self, dataset, collate_fn, max_tokens):
+        self.dataset = dataset
+        self.collate = collate_fn
+        self.max_tokens = max_tokens
+        self._preconditions()
+
+    def _preconditions(self):
+        def chunks(lengths):
+            idx  = -1
+            N = len(lengths)
+            while idx < N - 1:
+                total = 0
+                start = idx + 1
+                while total < self.max_tokens and idx < N-1:
+                    idx += 1
+                    total += lengths[idx]
+
+                if total > self.max_tokens:
+                    total -= lengths[idx]
+                    idx -= 1
+
+                yield (start, idx)
+
+        lengths_ls = [
+            dataset.export["lens"] 
+            for dataset in self.dataset.datasets
+        ]
+        flattened = []
+        for lengths in lengths_ls:
+            flattened.extend(lengths)
+
+        print("Obtaining batches")
+        self.batches = list(chunks(flattened))
+
+    def __iter__(self):
+        print("Obtained batches")
+        self.idx = -1
+        return self
+
+    def __next__(self):
+        self.idx += 1
+        if self.idx < len(self.batches):
+            s, v = self.batches[self.idx]
+            # print(s, v)
+            idxs = list(range(s, v))
+            samples = [self.dataset[idx] for idx in idxs]
+            return self.collate(samples)
+        else:
+            raise StopIteration
+
+    def __len__(self):
+        return len(self.batches)

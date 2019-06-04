@@ -5,5 +5,5 @@ python3 -m mmsentemb.main \
     --target data/cricket/train.hi \
     --target_lang hi \
     --dict_path data/dicts/central.dict \
-    --batch_size 8
+    --max_tokens 1024
 

@@ -129,9 +129,10 @@ class Generator(nn.Module):
         return self.project(x)
 
 class TCELoss(nn.Module):
-    def __init__(self):
+    def __init__(self, dictionary):
         super().__init__()
-        self.criterion = nn.CrossEntropyLoss(reduction='sum')
+        self.criterion = nn.CrossEntropyLoss(reduction='sum', 
+                ignore_index=dictionary.pad())
 
     def forward(self, logits, classes):
         T, B, H = logits.size()
@@ -162,7 +163,7 @@ class EmbeddingModel(nn.Module):
         encoder = Encoder(args, embed_tokens, dictionary)
         decoder = Decoder(args, embed_tokens, dictionary)
         generator = Generator(args, dictionary)
-        criterion = TCELoss()
+        criterion = TCELoss(dictionary)
         return cls(encoder, decoder, generator, criterion)
 
     def forward(self, _input):

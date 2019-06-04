@@ -7,6 +7,9 @@ class Trainer:
         self.optimizer = optimizer
         self.logger = logger
 
+    def to(self, device):
+        self.model.to(device)
+
     def run_update(self, batch):
         self.optimizer.zero_grad()
         loss = self.model(batch)
