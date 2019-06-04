@@ -4,4 +4,6 @@ python3 -m mmsentemb.main \
     --source_lang en \
     --target data/cricket/train.hi \
     --target_lang hi \
-    --dict_path data/dicts/central.dict
+    --dict_path data/dicts/central.dict \
+    --batch_size 8
+

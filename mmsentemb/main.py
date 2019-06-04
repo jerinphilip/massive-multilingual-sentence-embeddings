@@ -1,13 +1,13 @@
 import os
 import sys
 from argparse import ArgumentParser
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 from torch import optim
 from fairseq.data.dictionary import Dictionary
 
 import ilmulti as ilm
 from .models import EmbeddingModel
-from .data import ParallelDataset
+from .data import ParallelDataset, collate
 from .trainer import Trainer
 
 def add_args(parser):
@@ -35,14 +35,22 @@ if __name__ == '__main__':
     args = parser.parse_args()
     dictionary = Dictionary.load(args.dict_path)
     tokenizer = ilm.sentencepiece.SentencePieceTokenizer()
-    dataset = ParallelDataset(
+    first_dataset = ParallelDataset(
             (args.source, args.source_lang),
             (args.target, args.target_lang),
             tokenizer,
             dictionary
     )
+    second_dataset = ParallelDataset(
+            (args.target, args.target_lang),
+            (args.source, args.source_lang),
+            tokenizer,
+            dictionary
+    )
 
-    loader = DataLoader(dataset, collate_fn=dataset.collate(), batch_size=args.batch_size)
+    dataset = ConcatDataset([first_dataset, second_dataset])
+
+    loader = DataLoader(dataset, collate_fn=collate(dictionary), batch_size=args.batch_size)
     model = EmbeddingModel.build(args, dictionary)
     optimizer = optim.Adam(model.parameters())
     trainer = Trainer(model, optimizer)
