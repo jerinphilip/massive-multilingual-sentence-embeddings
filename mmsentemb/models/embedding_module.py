@@ -1,5 +1,9 @@
 import torch
 from torch import nn
+from .encoder import Encoder
+from .decoder import Decoder
+from .generator import Generator
+from .tce_loss import TCELoss
 
 class EmbeddingModel(nn.Module):
     def __init__(self, encoder, decoder, generator, criterion):
