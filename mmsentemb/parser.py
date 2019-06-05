@@ -28,3 +28,12 @@ def add_args(parser):
     parser.add_argument('--clip_grad_norm', type=float, default=5)
     parser.add_argument('--update_every', type=int, default=5)
     parser.add_argument('--num_epochs', type=int, default=5)
+
+
+    # Distributed arguments
+    parser.add_argument('--distributed_rank', type=int, required=False)
+    parser.add_argument('--distributed_backend', type=str, default='nccl')
+    parser.add_argument('--distributed_world_size', type=int, required=True)
+    parser.add_argument('--distributed_master_addr', type=str, required=True)
+    parser.add_argument('--distributed_port', type=int, required=True)
+    parser.add_argument('--device', type=int, required=False)

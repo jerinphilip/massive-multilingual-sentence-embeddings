@@ -4,40 +4,68 @@ from tqdm import tqdm, trange
 import torch
 from .parser import create_parser
 from .task import JointSpaceLearningTask
+from .models import EmbeddingModel
+from .trainer import Trainer
+from . import distributed_utils
+
+def train(args, trainer, task, loaders):
+    loss_sum = 0
+    for dataset_idx, loader in enumerate(loaders):
+        pbar = tqdm(enumerate(iter(loader)), total=len(loader), ascii='#', leave=True)
+        # pbar = enumerate(iter(loader))
+        for batch_idx, batch in pbar:
+            loss = trainer.train_step(batch)
+            loss_sum += loss
+            if batch_idx % args.update_every == 0:
+                # print(loss/batch['seq_length'])
+                state_dict = {
+                    # "epoch": epoch,
+                    #"batch_idx": batch_idx,
+                    "dataset_idx": dataset_idx,
+                    "lpb": loss_sum/(batch_idx+1),
+                    "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
+                    "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
+                    # "src_toks": batch["src_num_tokens"],
+                    # "tgt_toks": batch["tgt_num_tokens"]
+                }
+                pbar.set_postfix(**state_dict)
+                # print(state_dict)
+
+
+def main(args, init_distributed=True):
+    task = JointSpaceLearningTask(args)
+    task.setup_task()
+    loaders = task.get_loader()
+    if init_distributed:
+        args.distributed_rank = distributed_utils.distributed_init(args)
+
+    model = EmbeddingModel.build(args, task.dictionary)
+    trainer = Trainer(args, model)
+    for epoch in range(args.num_epochs):
+        train(args, trainer, task, loaders)
+
+def distributed_main(i, args, start_rank=0):
+    args.device = i
+    if args.distributed_rank is None:
+        args.distributed_rank = start_rank + i
+    main(args, init_distributed=True)
+
 
 if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args()
-    task = JointSpaceLearningTask(args)
-    task.load_dataset()
-    loaders = task.get_loader()
-    device = torch.device('cuda:1') if torch.cuda.is_available() \
-            else torch.device("cpu")
+    assert args.distributed_world_size <= torch.cuda.device_count()
+    port = args.distributed_port
+    host = args.distributed_master_addr
+    args.distributed_init_method = 'tcp://{host}:{port}'.format(host=host, port=port)
+    args.distributed_rank = None  # set based on device id
+    #if max(args.update_freq) > 1 and args.ddp_backend != 'no_c10d':
+    #    print('| NOTE: you may get better performance with: --ddp-backend=no_c10d')
+    torch.multiprocessing.spawn(
+        fn=distributed_main,
+        args=(args, ),
+        nprocs=args.distributed_world_size,
+    )
 
-    task.build_trainer()
-    task.trainer.to(device)
-    for epoch in trange(args.num_epochs, leave=True):
-        loss_sum = 0
-        for dataset_idx, loader in enumerate(loaders):
-            pbar = tqdm(enumerate(iter(loader)), total=len(loader), ascii='#', leave=True)
-            for batch_idx, batch in pbar:
-                for key in batch:
-                    if isinstance(batch[key], torch.Tensor):
-                        batch[key] = batch[key].to(device)
-                        # print(key, batch[key].size())
-                loss = task.trainer.run_update(batch)
-                loss_sum += loss
-                if batch_idx % args.update_every == 0:
-                    # print(loss/batch['seq_length'])
-                    state_dict = {
-                        "epoch": epoch,
-                        #"batch_idx": batch_idx,
-                        "dataset_idx": dataset_idx,
-                        "lpb": loss_sum/(batch_idx+1),
-                        "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
-                        "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
-                        # "src_toks": batch["src_num_tokens"],
-                        # "tgt_toks": batch["tgt_num_tokens"]
-                    }
-                    pbar.set_postfix(**state_dict)
+    # main(args, init_distributed=False)
 

@@ -1,7 +1,6 @@
 from .data import ParallelDataset, collate, EpochBatchIterator
 from .trainer import Trainer
 from fairseq.data.dictionary import Dictionary
-from .models import EmbeddingModel
 import ilmulti as ilm
 from torch import optim
 
@@ -11,6 +10,8 @@ class JointSpaceLearningTask:
         self.dictionary = Dictionary.load(args.dict_path)
         self.tokenizer = ilm.sentencepiece.SentencePieceTokenizer()
 
+    def setup_task(self):
+        self.load_dataset()
 
     def load_dataset(self):
         args = self.args
@@ -40,9 +41,3 @@ class JointSpaceLearningTask:
                 for dataset in self.datasets
         ]
         return loaders
-
-    def build_trainer(self):
-        self.model = EmbeddingModel.build(self.args, self.dictionary)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
-        self.logger = None
-        self.trainer = Trainer(self.args, self.model, self.optimizer, self.logger)
