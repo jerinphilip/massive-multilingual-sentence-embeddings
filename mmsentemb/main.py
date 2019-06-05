@@ -10,6 +10,7 @@ from . import distributed_utils
 
 def train(args, trainer, task, loaders):
     loss_sum = 0
+    loaders = loaders[:1]
     for dataset_idx, loader in enumerate(loaders):
         pbar = tqdm(enumerate(iter(loader)), total=len(loader), ascii='#', leave=True)
         # pbar = enumerate(iter(loader))
@@ -36,6 +37,8 @@ def main(args, init_distributed=True):
     task = JointSpaceLearningTask(args)
     task.setup_task()
     loaders = task.get_loader()
+    torch.cuda.set_device(args.device)
+
     if init_distributed:
         args.distributed_rank = distributed_utils.distributed_init(args)
 

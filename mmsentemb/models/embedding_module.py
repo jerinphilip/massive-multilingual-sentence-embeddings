@@ -31,9 +31,11 @@ class EmbeddingModel(nn.Module):
         return generator_output
 
     def forward(self, _input):
+        # Compute loss
         generator_output = self.get_generator_output(_input)
         shifted_gen_outputs = generator_output[:-1, :, :]
         shifted_tgts = _input["tgts"][:, 1:]
-        # print(shifted_tgts.size(), shifted_gen_outputs.size())
         loss_output = self.criterion(shifted_gen_outputs, shifted_tgts)
-        return loss_output
+
+        seq_len, batch_size, _ = shifted_gen_outputs.size()
+        return loss_output, batch_size

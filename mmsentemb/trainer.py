@@ -8,9 +8,9 @@ class Trainer:
         self.args = args
         # Detect device
         self._model = model
+        self.build_optimizer()
         self._model = self._model.to(self.device)
         self._wrapped_model = None
-        self.build_optimizer()
     
     def build_optimizer(self):
         self._optimizer = torch.optim.Adam(self._model.parameters())
@@ -34,7 +34,7 @@ class Trainer:
                     module=self._model,
                     device_ids=[args.device],
                     output_device=args.device,
-                    broadcast_buffers=False
+                    # broadcast_buffers=False
                 )
             return self._wrapped_model
 
@@ -43,7 +43,7 @@ class Trainer:
         self.model.train()
         self._optimizer.zero_grad()
         sample = move_to(sample, self.device)
-        loss = self.model(sample)
+        loss, logging_outputs = self.model(sample)
         loss.backward()
         self._optimizer.step()
         return loss.item()
