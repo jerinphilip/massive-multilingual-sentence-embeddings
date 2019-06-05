@@ -1,4 +1,4 @@
-from .data import ParallelDataset, collate, EpochBatchIterator
+from .data import ParallelDataset, collate, ShardedBatchIterator
 from .trainer import Trainer
 from fairseq.data.dictionary import Dictionary
 import ilmulti as ilm
@@ -31,11 +31,14 @@ class JointSpaceLearningTask:
         ]
 
     def get_loader(self):
+        args = self.args
         loaders = [
-                EpochBatchIterator(
+                ShardedBatchIterator(
                     dataset, 
                     collate_fn=collate(self.dictionary), 
                     max_tokens=self.args.max_tokens,
+                    shard_idx=args.distributed_rank,
+                    num_shards=args.distributed_world_size,
                     shuffle=False
                 )
                 for dataset in self.datasets

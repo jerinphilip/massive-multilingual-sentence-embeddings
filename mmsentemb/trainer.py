@@ -38,24 +38,12 @@ class Trainer:
                 )
             return self._wrapped_model
 
-    def run_update(self, batch):
-        self.optimizer.zero_grad()
-        loss = self.model(batch)
-        loss = loss/batch["batch_size"]
-        loss.backward()
-        clip_grad_norm_(self.model.parameters(), self.args.clip_grad_norm)
-        self.optimizer.step()
-        return loss.item()
-
     def train_step(self, sample):
         args = self.args
         self.model.train()
         self._optimizer.zero_grad()
         sample = move_to(sample, self.device)
-        # print(args.distributed_rank, "Model call")
         loss = self.model(sample)
-        # print(args.distributed_rank, "Model call")
-        # print(args.distributed_rank, loss.item())
         loss.backward()
         self._optimizer.step()
         return loss.item()
@@ -68,8 +56,3 @@ class Trainer:
         print(argmax) 
         print(batch["tgts"][:, 1:])
 
-    def build_trainer(self):
-        self.model = EmbeddingModel.build(self.args, self.dictionary)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
-        self.logger = None
-        self.trainer = Trainer(self.args, self.model, self.optimizer, self.logger)
