@@ -68,45 +68,6 @@ class ParallelDataset:
         second = to_tensor(self.second.tensors[idx], eos_end=False)
         return (first, second)
 
-def collate(dictionary):
-    def _collate(samples):
-        def fseq_length(sample):
-            first, second = sample
-            idxs, lang_idxs = first
-            return idxs.size(0)
-
-        samples = sorted(samples, key=fseq_length, reverse=True)
-        first, second = list(zip(*samples))
-
-        def _extract(one):
-            idxs, lang_idxs = list(zip(*one))
-            seq_lengths = [sample.size(0) for sample in idxs]
-            seq_lengths = torch.LongTensor(seq_lengths)
-            idxs = torch.nn.utils.rnn.pad_sequence(idxs, 
-                    padding_value=dictionary.pad())
-
-            idxs = idxs.transpose(0, 1).contiguous()
-            lang_idxs = torch.cat(lang_idxs, dim=0)
-            return idxs, lang_idxs, seq_lengths
-
-        fidxs, flang_idxs, fseq_lengths = _extract(first)
-        sidxs, slang_idxs, sseq_lengths = _extract(second)
-
-        batch_size = fidxs.size(0)
-        export = {
-            "srcs": fidxs,
-            "tgts": sidxs,
-            "src_lens": fseq_lengths,
-            "src_langs": flang_idxs,
-            "tgt_langs": slang_idxs,
-            "batch_size": batch_size,
-            "src_num_tokens": fseq_lengths.sum().item(),
-            "tgt_num_tokens": sseq_lengths.sum().item() 
-        }
-        return export
-    return _collate
-
-
 def compute_tokenized_lengths(_file, tokenizer):
     save_path = '{}.lengths'.format(_file)
     if os.path.exists(save_path):
@@ -133,52 +94,3 @@ def compute_tokenized_lengths(_file, tokenizer):
         print("{} computed and saved.".format(save_path))
         return export
 
-class EpochBatchIterator:
-    def __init__(self, dataset, collate_fn, max_tokens, shuffle=False):
-        self.dataset = dataset
-        self.collate = collate_fn
-        self.max_tokens = max_tokens
-        self._preconditions()
-        self.shuffle = shuffle
-
-    def _preconditions(self):
-        def chunks(lengths):
-            idx  = -1
-            N = len(lengths)
-            while idx < N - 1:
-                total = 0
-                start = idx + 1
-                while total < self.max_tokens and idx < N-1:
-                    idx += 1
-                    total += lengths[idx]
-
-                if total > self.max_tokens:
-                    total -= lengths[idx]
-                    idx -= 1
-
-                yield (start, idx)
-
-        lengths = self.dataset.export["lens"] 
-        print("Obtaining batches")
-        self.batches = list(chunks(lengths))
-        self.toks = [sum(lengths[s:v]) for s, v in self.batches]
-        print("Obtained {} batches".format(len(self.batches)))
-
-    def __iter__(self):
-        self.idx = -1
-        if self.shuffle:
-            random.shuffle(self.batches)
-        return self
-
-    def __next__(self):
-        self.idx += 1
-        if self.idx < len(self.batches):
-            s, v = self.batches[self.idx]
-            idxs = list(range(s, v))
-            samples = [self.dataset[idx] for idx in idxs]
-            return self.collate(samples)
-        else:
-            raise StopIteration
-
-    def __len__(self):
-        return len(self.batches)
