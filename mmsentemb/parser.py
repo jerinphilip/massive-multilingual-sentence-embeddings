@@ -25,7 +25,7 @@ def add_args(parser):
     parser.add_argument('--decoder_output_size', type=int, default=1024)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--max_tokens', type=int, default=512)
-    parser.add_argument('--clip_grad_norm', type=float, default=5)
+    parser.add_argument('--max_grad_norm', type=float, default=5)
     parser.add_argument('--update_every', type=int, default=5)
     parser.add_argument('--num_epochs', type=int, default=5)
 

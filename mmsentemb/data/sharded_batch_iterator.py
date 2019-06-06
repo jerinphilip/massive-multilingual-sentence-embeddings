@@ -27,7 +27,8 @@ def batches(lengths, max_tokens):
 
 
 class ShardedBatchIterator:
-    def __init__(self, dataset, collate_fn, max_tokens, shard_idx, num_shards, shuffle=False):
+    def __init__(self, dataset, collate_fn, max_tokens, 
+                        shard_idx, num_shards, shuffle=False):
         random.seed(num_shards)
         lengths = dataset.export["lens"]
         _batches = batches(lengths, max_tokens)
@@ -35,7 +36,7 @@ class ShardedBatchIterator:
             random.shuffle(_batches)
 
         while len(_batches) % num_shards != 0:
-            random_batch = random.choice(batches)
+            random_batch = random.choice(_batches)
             _batches.append(random_batch)
 
         self._num_batches  = len(_batches) // num_shards
@@ -48,7 +49,7 @@ class ShardedBatchIterator:
     def _prefetch_batches(self, dataset, collate_fn):
         self.batches = []
         for s, v in self._batches:
-            idxs = list(range(s, v))
+            idxs = list(range(s, v+1))
             samples = [dataset[idx] for idx in idxs]
             batch = collate_fn(samples)
             self.batches.append(batch)

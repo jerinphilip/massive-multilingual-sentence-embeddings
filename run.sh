@@ -13,7 +13,7 @@ python3 -m mmsentemb.main \
     --target data/cricket/train.hi \
     --target_lang hi \
     --dict_path data/dicts/central.dict \
-    --max_tokens 1024 \
+    --max_tokens 2048 \
     --num_epochs 200 \
     --distributed_backend nccl \
     --distributed_world_size 4 \

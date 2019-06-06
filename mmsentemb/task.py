@@ -39,7 +39,7 @@ class JointSpaceLearningTask:
                     max_tokens=self.args.max_tokens,
                     shard_idx=args.distributed_rank,
                     num_shards=args.distributed_world_size,
-                    shuffle=False
+                    shuffle=True
                 )
                 for dataset in self.datasets
         ]

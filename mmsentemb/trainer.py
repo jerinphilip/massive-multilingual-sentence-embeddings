@@ -51,6 +51,7 @@ class Trainer:
         loss.backward()
         # All gather.
         # Multiply gradients * world_size / sample_size
+        clip_grad_norm_(self._model.parameters(), args.max_grad_norm)
         self._optimizer.step()
         return loss.item()
 

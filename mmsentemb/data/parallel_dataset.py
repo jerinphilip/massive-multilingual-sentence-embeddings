@@ -94,3 +94,14 @@ def compute_tokenized_lengths(_file, tokenizer):
         print("{} computed and saved.".format(save_path))
         return export
 
+
+class PreloadFlyWeight:
+    def __init__(self):
+        self.cache = {}
+
+    def __getitem__(self, key):
+        if key not in self.cache:
+            self.cache[key] = torch.load(key)
+        return self.cache[key]
+
+preload_fly_weight = PreloadFlyWeight()
