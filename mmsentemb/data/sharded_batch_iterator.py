@@ -30,7 +30,7 @@ class ShardedBatchIterator:
     def __init__(self, dataset, collate_fn, max_tokens, 
                         shard_idx, num_shards, shuffle=False):
         random.seed(num_shards)
-        lengths = dataset.export["lens"]
+        lengths = dataset.lengths
         _batches = batches(lengths, max_tokens)
         if shuffle:
             random.shuffle(_batches)

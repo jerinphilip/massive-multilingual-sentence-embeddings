@@ -3,6 +3,8 @@ from .trainer import Trainer
 from fairseq.data.dictionary import Dictionary
 import ilmulti as ilm
 from torch import optim
+from itertools import permutations
+from collections import namedtuple
 
 class JointSpaceLearningTask:
     def __init__(self, args):
@@ -15,19 +17,18 @@ class JointSpaceLearningTask:
 
     def load_dataset(self):
         args = self.args
-        self.datasets = [
-            ParallelDataset(
-                (args.source, args.source_lang),
-                (args.target, args.target_lang),
-                self.tokenizer,
-                self.dictionary
-            ),
-            ParallelDataset(
-                (args.target, args.target_lang),
-                (args.source, args.source_lang),
-                self.tokenizer,
-                self.dictionary
-            ),
+        Corpus = namedtuple('Corpus', 'path lang')
+        def _get_individual(source, target):
+            return ParallelDataset(source, target, 
+                    self.tokenizer, self.dictionary)
+        pairs = [
+            Corpus(args.source, args.source_lang), 
+            Corpus(args.target, args.target_lang)
+        ]
+
+        self.datasets = [ 
+            _get_individual(p1, p2) 
+            for p1, p2 in permutations(pairs) 
         ]
 
     def get_loader(self):

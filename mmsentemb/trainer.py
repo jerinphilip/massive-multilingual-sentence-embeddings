@@ -55,6 +55,12 @@ class Trainer:
         self._optimizer.step()
         return loss.item()
 
+    def valid_step(self, sample):
+        self.model.eval()
+        with torch.no_grad():
+            loss, logging_outputs = self.model(sample)
+            return loss.item()
+
 
     def debug(self, batch):
         gout = self.model.get_generator_output(batch)
