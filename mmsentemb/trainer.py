@@ -2,6 +2,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.nn.parallel import DistributedDataParallel
 from .utils import move_to
 import torch
+from .distributed_utils import all_gather_list
 
 class Trainer:
     def __init__(self, args, model):
@@ -44,7 +45,12 @@ class Trainer:
         self._optimizer.zero_grad()
         sample = move_to(sample, self.device)
         loss, logging_outputs = self.model(sample)
+        # gathered = all_gather_list([loss, logging_outputs])
+        # print(gathered)
+
         loss.backward()
+        # All gather.
+        # Multiply gradients * world_size / sample_size
         self._optimizer.step()
         return loss.item()
 

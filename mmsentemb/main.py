@@ -1,25 +1,27 @@
 import os
 import sys
-from tqdm import tqdm, trange
 import torch
 from .parser import create_parser
 from .task import JointSpaceLearningTask
 from .models import EmbeddingModel
 from .trainer import Trainer
 from . import distributed_utils
+from .progress import progress_handler
 
 def train(args, trainer, task, loaders):
     loss_sum = 0
     loaders = loaders[:1]
+    progress = progress_handler.get(args.progress)
     for dataset_idx, loader in enumerate(loaders):
-        pbar = tqdm(enumerate(iter(loader)), total=len(loader), ascii='#', leave=True)
-        # pbar = enumerate(iter(loader))
+        state_dict = {}
+        pbar = progress(enumerate(loader), state_dict, 
+                total=len(loader), ascii='#', leave=True)
         for batch_idx, batch in pbar:
             loss = trainer.train_step(batch)
             loss_sum += loss
             if batch_idx % args.update_every == 0:
                 # print(loss/batch['seq_length'])
-                state_dict = {
+                state_dict.update({
                     # "epoch": epoch,
                     #"batch_idx": batch_idx,
                     "dataset_idx": dataset_idx,
@@ -28,9 +30,7 @@ def train(args, trainer, task, loaders):
                     "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
                     # "src_toks": batch["src_num_tokens"],
                     # "tgt_toks": batch["tgt_num_tokens"]
-                }
-                pbar.set_postfix(**state_dict)
-                # print(state_dict)
+                })
 
 
 def main(args, init_distributed=True):

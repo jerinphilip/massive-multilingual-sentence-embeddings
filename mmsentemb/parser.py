@@ -37,3 +37,7 @@ def add_args(parser):
     parser.add_argument('--distributed_master_addr', type=str, required=True)
     parser.add_argument('--distributed_port', type=int, required=True)
     parser.add_argument('--device', type=int, required=False)
+
+    # 
+    parser.add_argument('--progress', type=str, choices=['tqdm', 'none'], default='tqdm')
+    parser.add_argument('--worker_output', action='store_true')

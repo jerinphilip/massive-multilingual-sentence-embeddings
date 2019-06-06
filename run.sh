@@ -19,4 +19,5 @@ python3 -m mmsentemb.main \
     --distributed_world_size 4 \
     --distributed_master_addr $HOSTNAME \
     --distributed_port 1947 \
+    --progress tqdm
 
