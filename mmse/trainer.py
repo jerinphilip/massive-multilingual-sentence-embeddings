@@ -8,11 +8,11 @@ class Trainer:
     def __init__(self, args, model):
         self.args = args
         self._model = model
-        self.build_optimizer()
+        self._reset_state()
+    
+    def _reset_state(self):
         self._model = self._model.to(self.device)
         self._wrapped_model = None
-    
-    def build_optimizer(self):
         self._optimizer = torch.optim.Adam(self._model.parameters())
 
     @property
@@ -78,5 +78,6 @@ class Trainer:
 
     def load_state_dict(self, state_dict):
         self._model.load_state_dict(state_dict['model'])
+        self._reset_state()
         self._optimizer.load_state_dict(state_dict['optimizer'])
 
