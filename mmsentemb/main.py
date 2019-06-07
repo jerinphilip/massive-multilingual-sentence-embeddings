@@ -14,6 +14,7 @@ def train(args, trainer, task, loaders):
     progress = progress_handler.get(args.progress)
     for dataset_idx, loader in enumerate(loaders):
         state_dict = {}
+        # iterator = iter(loader)
         pbar = progress(enumerate(loader), state_dict, 
                 total=len(loader), ascii='#', leave=True)
         for batch_idx, batch in pbar:
