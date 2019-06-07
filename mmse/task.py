@@ -32,6 +32,7 @@ class JointSpaceLearningTask:
         ]
 
     def get_loader(self):
+        Loader = namedtuple('Loader', 'train dev test')
         args = self.args
         loaders = [
                 ShardedBatchIterator(

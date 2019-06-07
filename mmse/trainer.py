@@ -2,12 +2,11 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.nn.parallel import DistributedDataParallel
 from .utils.device_utils import move_to
 import torch
-from .distributed_utils import all_gather_list
+from mmse.utils.distributed import all_gather_list
 
 class Trainer:
     def __init__(self, args, model):
         self.args = args
-        # Detect device
         self._model = model
         self.build_optimizer()
         self._model = self._model.to(self.device)
@@ -68,4 +67,16 @@ class Trainer:
         argmax = argmax.transpose(0, 1).contiguous()
         print(argmax) 
         print(batch["tgts"][:, 1:])
+
+    def state_dict(self):
+        _export = {
+            "model": self._model.state_dict(),
+            "optimizer": self._optimizer.state_dict()
+        }
+
+        return _export
+
+    def load_state_dict(self, state_dict):
+        self._model.load_state_dict(state_dict['model'])
+        self._optimizer.load_state_dict(state_dict['optimizer'])
 

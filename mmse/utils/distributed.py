@@ -81,6 +81,7 @@ def distributed_init(args):
 
         if not args.worker_output:
             suppress_output(is_master(args))
+            suppress_warnings(is_master(args))
 
     args.distributed_rank = torch.distributed.get_rank()
     return args.distributed_rank
@@ -96,6 +97,18 @@ def suppress_output(is_master):
             builtin_print(*args, **kwargs)
 
     __builtin__.print = print
+
+def suppress_warnings(is_master):
+    """Suppress printing on the current device. Force printing with `force=True`."""
+    import warnings
+    builtin_warn = warnings.warn
+
+    def warn(*args, **kwargs):
+        force = kwargs.pop('force', False)
+        if is_master or force:
+            builtin_warn(*args, **kwargs)
+
+    warnings.warn = warn
 
 def get_rank():
     return dist.get_rank()

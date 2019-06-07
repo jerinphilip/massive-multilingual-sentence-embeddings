@@ -41,3 +41,6 @@ def add_args(parser):
     # 
     parser.add_argument('--progress', type=str, choices=['tqdm', 'none'], default='tqdm')
     parser.add_argument('--worker_output', action='store_true')
+
+    # 
+    parser.add_argument('--save_path', type=str, required=True)

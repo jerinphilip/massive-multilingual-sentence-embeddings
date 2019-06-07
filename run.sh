@@ -7,7 +7,7 @@ module load nccl/2.2.13
 
 # HOSTNAME=$(hostname)
 HOSTNAME='localhost'
-python3 -m mmsentemb.main \
+python3 -m mmse.main \
     --source data/cricket/train.en \
     --source_lang en \
     --target data/cricket/train.hi \
@@ -19,5 +19,6 @@ python3 -m mmsentemb.main \
     --distributed_world_size 4 \
     --distributed_master_addr $HOSTNAME \
     --distributed_port 1947 \
-    --progress tqdm
+    --progress tqdm \
+    --save_path checkpoints/checkpoint.pt
 
