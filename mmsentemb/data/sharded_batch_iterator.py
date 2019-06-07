@@ -1,11 +1,10 @@
 import os
-from torch.utils.data import Dataset
 import torch
-import ilmulti as ilm
-from collections import namedtuple
 import random
+import ilmulti as ilm
 from copy import deepcopy
-
+from collections import namedtuple
+from torch.utils.data import Dataset
 
 def batches(lengths, max_tokens):
     def chunks(lengths):

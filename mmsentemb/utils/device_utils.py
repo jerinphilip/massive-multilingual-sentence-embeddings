@@ -1,9 +1,5 @@
 import torch
 
-def log_dict(d):
-    print(d)
-
-
 def move_to(sample, device):
     def _move(maybe_tensor):
         if torch.is_tensor(maybe_tensor):

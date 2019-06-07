@@ -6,7 +6,7 @@ from .task import JointSpaceLearningTask
 from .models import EmbeddingModel
 from .trainer import Trainer
 from . import distributed_utils
-from .progress import progress_handler
+from .utils.progress import progress_handler
 
 def train(args, trainer, task, loaders):
     loss_sum = 0

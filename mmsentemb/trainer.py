@@ -1,6 +1,6 @@
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from torch.nn.parallel import DistributedDataParallel
-from .utils import move_to
+from .utils.device_utils import move_to
 import torch
 from .distributed_utils import all_gather_list
 
