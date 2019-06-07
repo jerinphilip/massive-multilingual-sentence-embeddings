@@ -43,10 +43,10 @@ class LMDBCorpusWriter:
 
 class LMDBCorpus:
     def __init__(self, corpus):
-        map_size = 1 << 40
         self.corpus = corpus
+        map_size = LMDBCorpusWriter.corpus_map_size(corpus)
         path = '{}.processed.lmdb'.format(corpus.path)
-        self.env = lmdb.open(path, map_size=map_size)
+        self.env = lmdb.open(path, map_size=map_size, readonly=True)
         self._init_metadata()
 
     def _init_metadata(self):
