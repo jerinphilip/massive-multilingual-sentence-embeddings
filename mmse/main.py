@@ -26,8 +26,6 @@ def train(args, trainer, loader, state_dict):
 
             Checkpoint.save(args, trainer, state_dict)
 
-
-
 def main(args, init_distributed=True):
     task = JointSpaceLearningTask(args)
     task.setup_task()

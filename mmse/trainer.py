@@ -73,7 +73,7 @@ class Trainer:
             "model": self._model.state_dict(),
             "optimizer": self._optimizer.state_dict()
         }
-
+        move_to(_export, torch.device("cpu"))
         return _export
 
     def load_state_dict(self, state_dict):
