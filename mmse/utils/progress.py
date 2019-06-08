@@ -38,7 +38,7 @@ class Tqdm(BaseProgressHandler):
 @register_progress_handler('none')
 class _None(BaseProgressHandler):
     def __init__(self, iterable, *args, **kwargs):
-        super.__init__(iterable, None)
+        super().__init__(iterable, None)
 
     def _update(self):
         pass

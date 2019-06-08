@@ -9,16 +9,18 @@ from mmse.utils import distributed
 from mmse.utils.progress import progress_handler
 from mmse.utils.checkpoint import Checkpoint
 
-def train(args, trainer, loader, state_dict):
+def train(args, epoch, trainer, loader, state_dict):
     loss_sum = 0
     progress = progress_handler.get(args.progress)
-    state_dict = {}
     pbar = progress(enumerate(loader), state_dict, total=len(loader))
     for batch_idx, batch in pbar:
+        # print(state_dict.keys())
         loss = trainer.train_step(batch)
         loss_sum += loss
+        # state_dict['updates'] += 1
         if batch_idx % args.update_every == 0:
             state_dict.update({
+                "epoch": epoch,
                 "lpb": loss_sum/(batch_idx+1),
                 "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
                 "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
@@ -37,11 +39,14 @@ def main(args, init_distributed=True):
 
     model = EmbeddingModel.build(args, task.dictionary)
     trainer = Trainer(args, model)
+    # state_dict = {"updates": 0}
     state_dict = {}
     Checkpoint.load(args, trainer, state_dict)
     loader = loaders[0]
-    for epoch in range(args.num_epochs):
-        train(args, trainer, loader, state_dict)
+
+    resume_epoch = state_dict.get('epoch', 0)
+    for epoch in range(resume_epoch, args.num_epochs):
+        train(args, epoch, trainer, loader, state_dict)
 
 def distributed_main(i, args, start_rank=0):
     args.device = i

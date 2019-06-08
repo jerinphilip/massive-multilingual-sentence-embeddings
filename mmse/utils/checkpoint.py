@@ -11,9 +11,13 @@ class Checkpoint:
     def save(args, trainer, train_state_dict):
         if not distributed.is_master(args):
             return
+
         state_dict = {}
+
+        # Load trainer
         state_dict.update(trainer.state_dict())
-        state_dict.update(train_state_dict)
+        state_dict.update({"update_itr": train_state_dict})
+
         move_to(state_dict, torch.device("cpu"))
         backup = '{}.old'.format(args.save_path)
         def write_closure():
@@ -32,10 +36,16 @@ class Checkpoint:
     def load(args, trainer, train_state_dict):
         if os.path.exists(args.save_path):
             checkpoint = torch.load(args.save_path, map_location=torch.device("cpu"))
+            # Update trainer
             trainer_state_dict = trainer.state_dict()
             trainer_state_dict.update(checkpoint)
             trainer.load_state_dict(trainer_state_dict)
-            train_state_dict.update(checkpoint)
+
+            del checkpoint['model']
+            del checkpoint['optimizer']
+            # Update epoch
+            train_state_dict.update(checkpoint["update_itr"])
+            # train_state_dict.update(checkpoint)
         else:
             warnings.warn("Checkpoint not found, training from scratch")
 
