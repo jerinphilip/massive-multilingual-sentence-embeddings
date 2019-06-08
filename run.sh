@@ -9,9 +9,8 @@ module load nccl/2.2.13
 ROOT='/ssd_scratch/cvit/perf-test'
 HOSTNAME='localhost'
 python3 -m mmse.main \
-    --source $ROOT/data/cricket/train.en \
+    --prefix $ROOT/data/cricket \
     --source_lang en \
-    --target $ROOT/data/cricket/train.hi \
     --target_lang hi \
     --dict_path data/dicts/central.dict \
     --max_tokens 1800 \

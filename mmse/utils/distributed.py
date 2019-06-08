@@ -83,6 +83,8 @@ def distributed_init(args):
             suppress_output(is_master(args))
             suppress_warnings(is_master(args))
 
+    # Set device. Important. NCCL deadlock otherwise.
+    torch.cuda.set_device(args.device)
     args.distributed_rank = torch.distributed.get_rank()
     return args.distributed_rank
 

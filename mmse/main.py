@@ -9,29 +9,44 @@ from mmse.utils import distributed
 from mmse.utils.progress import progress_handler
 from mmse.utils.checkpoint import Checkpoint
 
+def validate(args, epoch, trainer, loader, state_dict):
+    loss_sum = 0
+    progress = progress_handler.get(args.progress)
+    pbar = progress(enumerate(loader), state_dict, total=len(loader), desc='dev')
+    for batch_idx, batch in pbar:
+        loss = trainer.valid_step(batch)
+        loss_sum += loss
+        state_dict.update({
+            "epoch": epoch,
+            "lpb": loss_sum/(batch_idx+1),
+            "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
+            "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
+        })
+
+        #     Checkpoint.save(args, trainer, state_dict)
+
 def train(args, epoch, trainer, loader, state_dict):
     loss_sum = 0
     progress = progress_handler.get(args.progress)
-    pbar = progress(enumerate(loader), state_dict, total=len(loader))
+    pbar = progress(enumerate(loader), state_dict, total=len(loader), desc='train')
     for batch_idx, batch in pbar:
         # print(state_dict.keys())
         loss = trainer.train_step(batch)
         loss_sum += loss
         # state_dict['updates'] += 1
+        state_dict.update({
+            "epoch": epoch,
+            "lpb": loss_sum/(batch_idx+1),
+            "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
+            "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
+        })
         if batch_idx % args.update_every == 0:
-            state_dict.update({
-                "epoch": epoch,
-                "lpb": loss_sum/(batch_idx+1),
-                "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
-                "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
-            })
-
             Checkpoint.save(args, trainer, state_dict)
 
 def main(args, init_distributed=True):
     task = JointSpaceLearningTask(args)
     task.setup_task()
-    loaders = task.get_loader()
+    loader = task.get_loader()
     torch.cuda.set_device(args.device)
 
     if init_distributed:
@@ -39,14 +54,12 @@ def main(args, init_distributed=True):
 
     model = EmbeddingModel.build(args, task.dictionary)
     trainer = Trainer(args, model)
-    # state_dict = {"updates": 0}
     state_dict = {}
     Checkpoint.load(args, trainer, state_dict)
-    loader = loaders[0]
-
     resume_epoch = state_dict.get('epoch', 0)
     for epoch in range(resume_epoch, args.num_epochs):
-        train(args, epoch, trainer, loader, state_dict)
+        train(args, epoch, trainer, loader["train"], state_dict)
+        validate(args, epoch, trainer, loader["dev"], state_dict)
 
 def distributed_main(i, args, start_rank=0):
     args.device = i

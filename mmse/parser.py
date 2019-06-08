@@ -8,10 +8,11 @@ def create_parser():
 
 def add_args(parser):
     parser.add_argument('--dict_path', type=str, required=True)
-    parser.add_argument('--source', type=str, required=True)
+    parser.add_argument('--prefix', type=str, required=True)
     parser.add_argument('--source_lang', type=str, required=True)
-    parser.add_argument('--target', type=str, required=True)
     parser.add_argument('--target_lang', type=str, required=True)
+
+    # Encoder Parameters
     parser.add_argument('--encoder_embedding_dim', type=int, default=512)
     parser.add_argument('--encoder_hidden_size', type=int, default=512)
     parser.add_argument('--encoder_num_layers', type=int, default=3)
