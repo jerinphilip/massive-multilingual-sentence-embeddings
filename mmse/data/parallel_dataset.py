@@ -3,8 +3,9 @@ import lmdb
 import torch
 import pickle
 import random
+import itertools
 import ilmulti as ilm
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset
 from collections import namedtuple
 from copy import deepcopy
 from .lmdb import LMDBCorpus
@@ -44,4 +45,33 @@ class ParallelDataset(Dataset):
     @property
     def lengths(self):
         return self.first.lengths
+
+
+class MultiwayDataset:
+    def __init__(self, first, second, tokenizer, dictionary):
+        pairs = [first, second]
+        multiway = itertools.permutations(pairs, 2)
+        self.datasets = [
+            ParallelDataset(fst, snd, tokenizer, dictionary)
+            for fst, snd in multiway
+        ]
+        self.concatenated = ConcatDataset(self.datasets)
+        self.lengths = list(itertools.chain(
+            *[dataset.lengths for dataset in self.datasets]
+        ))
+
+    def __getitem__(self, idx):
+        return self.concatenated.__getitem__(idx)
+
+    def __len__(self):
+        return self.concatenated.__len__()
+
+
+
+
+
+
+
+
+
 

@@ -1,5 +1,6 @@
 import os
 from .data import ParallelDataset, collate, ShardedBatchIterator
+from .data import MultiwayDataset
 from .trainer import Trainer
 from fairseq.data.dictionary import Dictionary
 import ilmulti as ilm
@@ -33,7 +34,9 @@ class JointSpaceLearningTask:
             target = '{}.{}'.format(split_prefix, args.target_lang)
             source_corpus = Corpus(source, args.source_lang)
             target_corpus = Corpus(target, args.target_lang)
-            return ParallelDataset(source_corpus, target_corpus, 
+            #return ParallelDataset(source_corpus, target_corpus, 
+            #        self.tokenizer, self.dictionary)
+            return MultiwayDataset(source_corpus, target_corpus, 
                     self.tokenizer, self.dictionary)
 
         self.dataset = OrderedDict()
