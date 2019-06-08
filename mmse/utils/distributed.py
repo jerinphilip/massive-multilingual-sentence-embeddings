@@ -65,6 +65,8 @@ def distributed_init(args):
     if torch.distributed.is_initialized():
         warnings.warn('Distributed is already initialized, cannot initialize twice!')
     else:
+        # Set device. Important. NCCL deadlock otherwise.
+        torch.cuda.set_device(args.device)
         print('| distributed init (rank {}): {}'.format(
             args.distributed_rank, args.distributed_init_method), flush=True)
         dist.init_process_group(
@@ -83,8 +85,6 @@ def distributed_init(args):
             suppress_output(is_master(args))
             suppress_warnings(is_master(args))
 
-    # Set device. Important. NCCL deadlock otherwise.
-    torch.cuda.set_device(args.device)
     args.distributed_rank = torch.distributed.get_rank()
     return args.distributed_rank
 

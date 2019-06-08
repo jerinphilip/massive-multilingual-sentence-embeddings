@@ -8,38 +8,35 @@ from mmse.trainer import Trainer
 from mmse.utils import distributed
 from mmse.utils.progress import progress_handler
 from mmse.utils.checkpoint import Checkpoint
+from fairseq.meters import AverageMeter
+
+def update_state(epoch, loss_meter, loss, batch, state_dict):
+    B, T = batch["batch_size"], batch["tgt_num_tokens"]
+    loss = loss/B
+    loss_meter.update(loss)
+    state_dict.update({
+        "epoch": epoch,
+        "lpb": loss_meter.avg,
+        "lpt": loss_meter.avg/T,
+        "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
+    })
+
 
 def validate(args, epoch, trainer, loader, state_dict):
-    loss_sum = 0
+    loss = AverageMeter()
     progress = progress_handler.get(args.progress)
     pbar = progress(enumerate(loader), state_dict, total=len(loader), desc='dev')
     for batch_idx, batch in pbar:
-        loss = trainer.valid_step(batch)
-        loss_sum += loss
-        state_dict.update({
-            "epoch": epoch,
-            "lpb": loss_sum/(batch_idx+1),
-            "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
-            "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
-        })
-
-        #     Checkpoint.save(args, trainer, state_dict)
+        mini_batch_loss = trainer.valid_step(batch)
+        update_state(epoch, loss, mini_batch_loss, batch, state_dict)
 
 def train(args, epoch, trainer, loader, state_dict):
-    loss_sum = 0
+    loss = AverageMeter()
     progress = progress_handler.get(args.progress)
     pbar = progress(enumerate(loader), state_dict, total=len(loader), desc='train')
     for batch_idx, batch in pbar:
-        # print(state_dict.keys())
-        loss = trainer.train_step(batch)
-        loss_sum += loss
-        # state_dict['updates'] += 1
-        state_dict.update({
-            "epoch": epoch,
-            "lpb": loss_sum/(batch_idx+1),
-            "lpt": loss_sum/((batch_idx+1)*batch["tgt_num_tokens"]),
-            "toks": batch["src_num_tokens"] + batch["tgt_num_tokens"],
-        })
+        mini_batch_loss = trainer.train_step(batch)
+        update_state(epoch, loss, mini_batch_loss, batch, state_dict)
         if batch_idx % args.update_every == 0:
             Checkpoint.save(args, trainer, state_dict)
 
