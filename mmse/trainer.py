@@ -3,6 +3,7 @@ from torch.nn.parallel import DistributedDataParallel
 from .utils.device_utils import move_to
 import torch
 from mmse.utils.distributed import all_gather_list
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 class Trainer:
     def __init__(self, args, model):
@@ -14,6 +15,7 @@ class Trainer:
         self._model = self._model.to(self.device)
         self._wrapped_model = None
         self._optimizer = torch.optim.Adam(self._model.parameters())
+        self._lr_scheduler = ReduceLROnPlateau(self._optimizer, mode='min', patience=3)
 
     @property
     def device(self):
@@ -44,12 +46,7 @@ class Trainer:
         self._optimizer.zero_grad()
         sample = move_to(sample, self.device)
         loss, logging_outputs = self.model(sample)
-        # gathered = all_gather_list([loss, logging_outputs])
-        # print(gathered)
-
         loss.backward()
-        # All gather.
-        # Multiply gradients * world_size / sample_size
         clip_grad_norm_(self._model.parameters(), args.max_grad_norm)
         self._optimizer.step()
         return loss.item()
@@ -71,7 +68,8 @@ class Trainer:
     def state_dict(self):
         _export = {
             "model": self._model.state_dict(),
-            "optimizer": self._optimizer.state_dict()
+            "optimizer": self._optimizer.state_dict(),
+            "lr_schedular": self._lr_scheduler.state_dict()
         }
         move_to(_export, torch.device("cpu"))
         return _export
@@ -80,4 +78,5 @@ class Trainer:
         self._model.load_state_dict(state_dict['model'])
         self._reset_state()
         self._optimizer.load_state_dict(state_dict['optimizer'])
-
+        if 'lr_scheduler' in state_dict:
+            self._lr_scheduler.load_state_dict(state_dict['lr_scheduler'])

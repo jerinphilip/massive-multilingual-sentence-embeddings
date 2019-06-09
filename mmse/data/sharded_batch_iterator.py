@@ -46,7 +46,6 @@ class ShardedBatchIterator:
         self.collate = collate_fn
         self._batches = _batches[start:end]
         self._cached_batches = []
-        # self._prefetch_batches(dataset, collate_fn)
 
     def _prefetch_batches(self, dataset, collate_fn):
         self.batches = []
@@ -61,7 +60,6 @@ class ShardedBatchIterator:
         if self._cached_batches:
             return self._cached_batches.__iter__()
         self.batch_idx = 0
-        # return self.batches.__iter__()
         return self
 
         

@@ -23,10 +23,11 @@ class BaseProgressHandler:
     def _update(self):
         raise NotImplementedError()
 
+
 @register_progress_handler('tqdm')
 class Tqdm(BaseProgressHandler):
     def __init__(self, iterable, progress_dict, **kwargs):
-        defaults = {"ascii": "#", "leave": True, "ncols": 200}
+        defaults = {"ascii": "#", "leave": False, "ncols": 200}
         defaults.update(kwargs)
         self.pbar = tqdm(iterable, postfix=None, **defaults)
         super().__init__(iter(self.pbar), progress_dict)

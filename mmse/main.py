@@ -30,6 +30,8 @@ def validate(args, epoch, trainer, loader, state_dict):
         mini_batch_loss = trainer.valid_step(batch)
         update_state(epoch, loss, mini_batch_loss, batch, state_dict)
 
+    trainer._lr_scheduler.step(loss.avg)
+
 def train(args, epoch, trainer, loader, state_dict):
     loss = AverageMeter()
     progress = progress_handler.get(args.progress)

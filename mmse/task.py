@@ -20,22 +20,12 @@ class JointSpaceLearningTask:
     def load_dataset(self):
         args = self.args
         Corpus = namedtuple('Corpus', 'path lang')
-        # def _get_individual(source, target):
-        #     return ParallelDataset(source, target, 
-        #             self.tokenizer, self.dictionary)
-        # pairs = [
-        #     Corpus(args.source, args.source_lang), 
-        #     Corpus(args.target, args.target_lang)
-        # ]
-
         def _get(args, split):
             split_prefix = os.path.join(args.prefix, split)
             source = '{}.{}'.format(split_prefix, args.source_lang)
             target = '{}.{}'.format(split_prefix, args.target_lang)
             source_corpus = Corpus(source, args.source_lang)
             target_corpus = Corpus(target, args.target_lang)
-            #return ParallelDataset(source_corpus, target_corpus, 
-            #        self.tokenizer, self.dictionary)
             return MultiwayDataset(source_corpus, target_corpus, 
                     self.tokenizer, self.dictionary)
 
