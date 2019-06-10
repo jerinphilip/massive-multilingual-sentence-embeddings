@@ -46,6 +46,7 @@ class Trainer:
         self._optimizer.zero_grad()
         sample = move_to(sample, self.device)
         loss, logging_outputs = self.model(sample)
+        # print('rank', args.distributed_rank, 'loss', loss.item())
         loss.backward()
         clip_grad_norm_(self._model.parameters(), args.max_grad_norm)
         self._optimizer.step()

@@ -8,6 +8,7 @@ from mmse.trainer import Trainer
 from mmse.utils import distributed
 from mmse.utils.progress import progress_handler
 from mmse.utils.checkpoint import Checkpoint
+from mmse.utils.logging import prettified
 from fairseq.meters import AverageMeter
 
 def update_state(epoch, loss_meter, loss, batch, state_dict):
@@ -29,6 +30,7 @@ def validate(args, epoch, trainer, loader, state_dict):
     for batch_idx, batch in pbar:
         mini_batch_loss = trainer.valid_step(batch)
         update_state(epoch, loss, mini_batch_loss, batch, state_dict)
+    print(prettified(state_dict))
 
     trainer._lr_scheduler.step(loss.avg)
 
@@ -41,6 +43,7 @@ def train(args, epoch, trainer, loader, state_dict):
         update_state(epoch, loss, mini_batch_loss, batch, state_dict)
         if batch_idx % args.update_every == 0:
             Checkpoint.save(args, trainer, state_dict)
+    print(prettified(state_dict))
 
 def main(args, init_distributed=True):
     task = JointSpaceLearningTask(args)

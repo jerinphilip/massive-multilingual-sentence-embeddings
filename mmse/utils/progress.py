@@ -24,6 +24,7 @@ class BaseProgressHandler:
         raise NotImplementedError()
 
 
+
 @register_progress_handler('tqdm')
 class Tqdm(BaseProgressHandler):
     def __init__(self, iterable, progress_dict, **kwargs):
