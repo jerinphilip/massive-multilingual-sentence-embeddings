@@ -38,4 +38,4 @@ class EmbeddingModel(nn.Module):
         loss_output = self.criterion(shifted_gen_outputs, shifted_tgts)
 
         seq_len, batch_size, _ = shifted_gen_outputs.size()
-        return loss_output, batch_size
+        return loss_output, _input["tgt_lens"].detach().sum().item(), batch_size

@@ -1,0 +1,24 @@
+corpora:
+    ilci:
+        splits: ['train']
+        langs: [ 'en', 'hi',  'ta', 'te', 'ml', 'ur', 'bn']
+    iitb-hi-en:
+        splits: ['train', 'dev', 'test']
+        langs: ['en', 'hi']
+    wat-ilmpc:
+        splits: ['train', 'dev', 'test']
+        langs: [ 'en', 'hi',  'ta', 'te', 'ml', 'ur', 'bn']
+        # langs: ['en', 'ta']
+    # national-newscrawl:
+    #     splits: ['train']
+    #     langs: ['en', 'hi']
+    ufal-en-tam:
+        splits: ['train', 'test', 'dev']
+        langs: ['en', 'ta']
+    LASER-tatoeba:
+        splits: ['dev']
+        langs: [ 'en', 'hi',  'ta', 'te', 'ml', 'ur']
+
+dictionary:
+    src: '/home/jerin/code/ilmulti/extras/central.dict'
+    tgt: '/home/jerin/code/ilmulti/extras/central.dict'

@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class Decoder(nn.Module):
     def __init__(self, args, embed_tokens, dictionary):
@@ -32,6 +33,7 @@ class Decoder(nn.Module):
         context = encoder_outs[-1, :, :]
         batch_size, seqlen = prev_output_tokens.size()
         x = self.embed_tokens(prev_output_tokens)
+        x = F.dropout(x, p=self.args.dropout, training=self.training)
         lang_embed = self.embed_tokens(tgt_langs)
         # TODO(jerin): Dropout
 
@@ -48,6 +50,7 @@ class Decoder(nn.Module):
             # print(x[j, :, :].size())
             # print(lang_embed.size())
             # print(context.size())
+            # This may require some check
             decoder_input = torch.cat([ 
                 x[j, :, :], lang_embed, context
             ], dim=1)
@@ -57,6 +60,8 @@ class Decoder(nn.Module):
 
             # TODO(jerin): These might require projections
             decoder_outs, (h_final, c_final) = self.lstm(decoder_input, (h0, c0))
+            decoder_outs  = F.dropout(decoder_outs, p=self.args.dropout, training=self.training)
+
             outs.append(decoder_outs)
             h0 = h_final
             c0 = c_final

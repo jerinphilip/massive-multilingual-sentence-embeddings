@@ -4,8 +4,8 @@ from collections import OrderedDict
 def _format(val):
     default = lambda x: x
     cases = OrderedDict([
-        (float, lambda x: '{:3f}'.format(x)),
-        (int, lambda x: '{:.2E}'.format(x)),
+        (float, lambda x: '{:.3f}'.format(x)),
+        (int, lambda x: '{}'.format(x)),
     ])
         
     for key in cases:
@@ -15,8 +15,8 @@ def _format(val):
 
 
 
-def prettified(progress_dict):
+def prettified(keyvals):
     entries = ['{}:{}'.format(key, _format(value)) \
-            for key, value in progress_dict.items()]
-    fmted = '|'.join(entries)
+            for key, value in keyvals]
+    fmted = ' | '.join(entries)
     return fmted

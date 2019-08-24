@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class Encoder(nn.Module):
     def __init__(self, args, embed_tokens, dictionary):
@@ -16,6 +17,7 @@ class Encoder(nn.Module):
     def forward(self, sequence, sequence_lengths):
         #TODO(jerin): Add dropout
         x = self.embed_tokens(sequence)
+        x = F.dropout(x, p=self.args.dropout, training=self.training)
         batch_size, seq_len, _ = x.size()
         x = x.transpose(0, 1) 
 
@@ -36,6 +38,8 @@ class Encoder(nn.Module):
         x, _  = nn.utils.rnn.pad_packed_sequence(
                 packed_outs, padding_value=self.dictionary.pad()
         )
+
+        x = F.dropout(x, p=self.args.dropout, training=self.training)
 
         if self.args.encoder_bidirectional:
             def combine_bidir(outs):

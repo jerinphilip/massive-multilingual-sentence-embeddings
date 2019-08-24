@@ -1,0 +1,17 @@
+corpora:
+    ilci:
+        splits: ['train']
+        langs: [ 'en', 'hi']
+    iitb-hi-en:
+        splits: ['train', 'dev', 'test']
+        langs: ['en', 'hi']
+    wat-ilmpc:
+        splits: ['train', 'dev', 'test']
+        langs: [ 'en', 'hi']
+    LASER-tatoeba:
+        splits: ['dev']
+        langs: [ 'en', 'hi']
+
+dictionary:
+    src: '/home/jerin/code/ilmulti/extras/central.dict'
+    tgt: '/home/jerin/code/ilmulti/extras/central.dict'

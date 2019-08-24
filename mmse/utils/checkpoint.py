@@ -5,6 +5,7 @@ import warnings
 from mmse.utils import distributed
 from mmse.utils.device_utils import move_to
 from threading import Thread
+import time
 
 class Checkpoint:
     @staticmethod
@@ -29,8 +30,12 @@ class Checkpoint:
         # How to prevent a block of code from being interrupted by
         # KeyboardInterrupt in Python?
         a = Thread(target=write_closure)
+        start = time.time()
         a.start()
         a.join()
+        end = time.time()
+        duration = end - start
+        print("Checkpoint saved. Writing took {:.2f} seconds".format(duration))
 
     @staticmethod
     def load(args, trainer, train_state_dict):
@@ -41,8 +46,8 @@ class Checkpoint:
             trainer_state_dict.update(checkpoint)
             trainer.load_state_dict(trainer_state_dict)
 
-            del checkpoint['model']
-            del checkpoint['optimizer']
+            # del checkpoint['model']
+            # del checkpoint['optimizer']
             # Update epoch
             train_state_dict.update(checkpoint["update_itr"])
             # train_state_dict.update(checkpoint)

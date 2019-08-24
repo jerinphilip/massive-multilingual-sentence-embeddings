@@ -4,6 +4,7 @@ from .utils.device_utils import move_to
 import torch
 from mmse.utils.distributed import all_gather_list
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from .utils.distributed import all_gather_list
 
 class Trainer:
     def __init__(self, args, model):
@@ -45,26 +46,48 @@ class Trainer:
         self.model.train()
         self._optimizer.zero_grad()
         sample = move_to(sample, self.device)
-        loss, logging_outputs = self.model(sample)
-        # print('rank', args.distributed_rank, 'loss', loss.item())
+        loss, sample_sizes, logging_outputs = self.model(sample)
         loss.backward()
+
+        # All gather sample sizes
+        sample_sizes, logging_outputs = zip(*all_gather_list([sample_sizes, logging_outputs]))
+        sample_sizes = list(sample_sizes)
+        logging_outputs = list(logging_outputs)
+        grad_denominator = sum(sample_sizes)
+        self.multiply_grad(args.distributed_world_size/float(grad_denominator))
         clip_grad_norm_(self._model.parameters(), args.max_grad_norm)
         self._optimizer.step()
-        return loss.item()
+
+        train_loss = loss.item()*args.distributed_world_size/float(grad_denominator)
+        return train_loss
+
+    def multiply_grad(self, val):
+        """Multiplies grads by a constant *c*."""
+        for p in self._model.parameters():
+            if p.grad is not None:
+                p.grad.data.mul_(val)
 
     def valid_step(self, sample):
         self.model.eval()
         with torch.no_grad():
-            loss, logging_outputs = self.model(sample)
-            return loss.item()
+            sample = move_to(sample, self.device)
+            loss, sample_sizes, logging_outputs = self.model(sample)
+            sample_sizes, logging_outputs = zip(*all_gather_list([sample_sizes, logging_outputs]))
+            sample_sizes = list(sample_sizes)
+            logging_outputs = list(logging_outputs)
+
+            grad_denominator = sum(sample_sizes)
+            valid_loss = loss.item()*self.args.distributed_world_size/float(grad_denominator)
+            return valid_loss
 
 
-    def debug(self, batch):
-        gout = self.model.get_generator_output(batch)
+    def debug(self, sample):
+        sample = move_to(sample, self.device)
+        gout = self._model.get_generator_output(sample)
         _max, argmax = torch.max(gout, dim=2)
         argmax = argmax.transpose(0, 1).contiguous()
-        print(argmax) 
-        print(batch["tgts"][:, 1:])
+        print(argmax, flush=True) 
+        print(sample["tgts"][:, 1:], flush=True)
 
     def state_dict(self):
         _export = {

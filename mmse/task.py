@@ -1,4 +1,5 @@
 import os
+import yaml
 from .data import ParallelDataset, collate, ShardedBatchIterator
 from .data import MultiwayDataset
 from .trainer import Trainer
@@ -7,32 +8,37 @@ import ilmulti as ilm
 from torch import optim
 from itertools import permutations
 from collections import namedtuple, OrderedDict
+from mmse.data.config.utils import pairs_select
 
 class JointSpaceLearningTask:
     def __init__(self, args):
         self.args = args
-        self.dictionary = Dictionary.load(args.dict_path)
+        self.data = self.load_dataconfig(self.args.config_file)
+        self.dictionary = Dictionary.load(self.data['dictionary']['src'])
         self.tokenizer = ilm.sentencepiece.SentencePieceTokenizer()
 
     def setup_task(self):
         self.load_dataset()
 
+    def load_dataconfig(self, config_file):
+        with open(config_file) as fp:
+            content = fp.read()
+            data = yaml.load(content)
+            return data
+
     def load_dataset(self):
-        args = self.args
-        Corpus = namedtuple('Corpus', 'path lang')
-        def _get(args, split):
-            split_prefix = os.path.join(args.prefix, split)
-            source = '{}.{}'.format(split_prefix, args.source_lang)
-            target = '{}.{}'.format(split_prefix, args.target_lang)
-            source_corpus = Corpus(source, args.source_lang)
-            target_corpus = Corpus(target, args.target_lang)
-            return MultiwayDataset(source_corpus, target_corpus, 
-                    self.tokenizer, self.dictionary)
+        def _get(split):
+            pairs = pairs_select(self.data['corpora'], split)
+            dataset = MultiwayDataset(
+                pairs, self.tokenizer, 
+                self.dictionary
+            )
+            return dataset
 
         self.dataset = OrderedDict()
         splits = ["train", "dev", "test"]
         for split in splits[:2]:
-            self.dataset[split] = _get(args, split)
+            self.dataset[split] = _get(split)
 
         return self.dataset
 
@@ -46,7 +52,7 @@ class JointSpaceLearningTask:
                 max_tokens=args.max_tokens,
                 shard_idx=args.distributed_rank,
                 num_shards=args.distributed_world_size,
-                shuffle=True
+                shuffle=(True if split is 'train' else False)
             )
             loader[split] = itr
         return loader

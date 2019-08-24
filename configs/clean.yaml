@@ -1,0 +1,11 @@
+corpora:
+    ilci:
+        splits: ['train']
+        langs: [ 'en', 'hi',  'ta', 'te', 'ml', 'ur', 'bn']
+    LASER-tatoeba:
+        splits: ['dev']
+        langs: [ 'en', 'hi',  'ta', 'te', 'ml', 'ur']
+
+dictionary:
+    src: '/home/jerin/code/ilmulti/extras/central.dict'
+    tgt: '/home/jerin/code/ilmulti/extras/central.dict'

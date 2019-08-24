@@ -6,76 +6,106 @@ from copy import deepcopy
 from collections import namedtuple
 from torch.utils.data import Dataset
 
-def batches(lengths, max_tokens):
-    def chunks(lengths):
-        idx  = -1
-        N = len(lengths)
-        while idx < N - 1:
-            total = 0
-            start = idx + 1
-            while total < max_tokens and idx < N-1:
-                idx += 1
-                total += lengths[idx]
-
-            if total > max_tokens:
-                total -= lengths[idx]
-                idx -= 1
-
-            yield (start, idx)
-    return list(chunks(lengths))
-
-
 class ShardedBatchIterator:
     def __init__(self, dataset, collate_fn, max_tokens, 
                         shard_idx, num_shards, shuffle=False):
-        random.seed(num_shards)
-        lengths = dataset.lengths
-        _batches = batches(lengths, max_tokens)
-        if shuffle:
-            random.shuffle(_batches)
 
-        while len(_batches) % num_shards != 0:
-            random_batch = random.choice(_batches)
-            _batches.append(random_batch)
-
-        self._num_batches  = len(_batches) // num_shards
-
-        start = shard_idx*self._num_batches
-        end = (shard_idx+1)*self._num_batches
+        self.PRNG = random.Random(num_shards)
+        self.shuffle = shuffle
+        self.shard_idx = shard_idx
+        self.num_shards = num_shards
         self.dataset = dataset
         self.collate = collate_fn
-        self._batches = _batches[start:end]
-        self._cached_batches = []
 
-    def _prefetch_batches(self, dataset, collate_fn):
-        self.batches = []
-        for s, v in self._batches:
-            idxs = list(range(s, v+1))
-            samples = [dataset[idx] for idx in idxs]
-            batch = collate_fn(samples)
-            self.batches.append(batch)
+        # Batch properties
+        _batches = self.precompute_batch_idxs(dataset.lengths, max_tokens)
+        while len(_batches) % num_shards != 0:
+            random_batch = self.PRNG.choice(_batches)
+            _batches.append(random_batch)
+
+        self.batches = _batches
+        self._num_batches  = len(_batches) // num_shards
+
+    def precompute_batch_idxs(self, lengths, max_tokens):
+        N = len(lengths)
+        idxs = list(range(N))
+
+        # Sort lengths
+        paired = zip(idxs, lengths)
+        paired = sorted(paired, key=lambda x: x[1])
+
+        batches = []
+
+        current_length = 0
+        batch = []
+        for idx, length in paired:
+            if current_length + length <= max_tokens:
+                batch.append(idx)
+                current_length += length
+            else:
+                batches.append(batch)
+                batch = []
+                current_length = 0
+
+        if batch:
+            batches.append(batch)
+        return batches
+
+    def _reshuffle(self):
+        if self.shuffle:
+            self.PRNG.shuffle(self.batches)
+
+        start = self.shard_idx*self._num_batches
+        end = (self.shard_idx+1)*self._num_batches
+        self._batches = self.batches[start:end]
+
+        # Debug
+        # self.debug()
+
+    def debug(self):
+        with open("/scratch/batches.{}".format(self.shard_idx), 'w+') as fp:
+            for batch in self.batches:
+                s = '|'.join(map(str, batch))
+                fp.write(s + '\n')
+        with open("/scratch/lengths.{}".format(self.shard_idx), 'w+') as fp:
+            for length in self.dataset.lengths:
+                fp.write(str(length) + '\n')
+
+        exit()
 
 
     def __iter__(self):
-        if self._cached_batches:
-            return self._cached_batches.__iter__()
         self.batch_idx = 0
+        self._reshuffle()
         return self
 
         
     def __len__(self):
-        return len(self._batches)
+        return self._num_batches
 
     def __next__(self):
-        if self.batch_idx >= len(self._batches):
+        if self.batch_idx >= self._num_batches:
             raise StopIteration
         
-        s, v = self._batches[self.batch_idx] 
-        idxs = list(range(s, v+1))
-        samples = [self.dataset[idx] for idx in idxs]
-        batch = self.collate(samples)
+        # TODO(jerin): Fix this.
+        try:
+            batch = self._get_batch(self.batch_idx)
+        except:
+            # Debug
+            batch_idx = (self.batch_idx + 1)%self._num_batches
+            batch = self._get_batch(batch_idx)
+
         self.batch_idx = self.batch_idx + 1
-        self._cached_batches.append(batch)
+        return batch
+
+    def _get_batch(self, batch_idx):
+        idxs  = self._batches[batch_idx] 
+        samples = []
+        for idx in idxs:
+            sample = self.dataset[idx]
+            samples.append(sample)
+
+        batch = self.collate(samples)
         return batch
 
 

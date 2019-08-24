@@ -35,12 +35,14 @@ def collate(dictionary):
             "srcs": fidxs,
             "tgts": sidxs,
             "src_lens": fseq_lengths,
+            "tgt_lens": sseq_lengths,
             "src_langs": flang_idxs,
             "tgt_langs": slang_idxs,
             "batch_size": batch_size,
             "src_num_tokens": fseq_lengths.sum().item(),
             "tgt_num_tokens": sseq_lengths.sum().item() 
         }
+        # print(export['src_num_tokens'], export['tgt_num_tokens'])
         return export
     return _collate
 
