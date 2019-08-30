@@ -28,7 +28,7 @@ def add_args(parser):
     parser.add_argument('--decoder_output_size', type=int, default=1024)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--max_tokens', type=int, default=512)
-    parser.add_argument('--max_grad_norm', type=float, default=10)
+    parser.add_argument('--max_grad_norm', type=float, default=1)
     parser.add_argument('--update_every', type=int, default=1000)
     parser.add_argument('--validate_every', type=int, default=100)
     parser.add_argument('--num_epochs', type=int, default=5)
@@ -51,3 +51,6 @@ def add_args(parser):
 
     # 
     parser.add_argument('--save_path', type=str, required=True)
+
+    # Optimizer
+    parser.add_argument('--lr', type=float, default=1e-2)

@@ -15,7 +15,7 @@ class Trainer:
     def _reset_state(self):
         self._model = self._model.to(self.device)
         self._wrapped_model = None
-        self._optimizer = torch.optim.Adam(self._model.parameters())
+        self._optimizer = torch.optim.Adam(self._model.parameters(), lr=self.args.lr)
         self._lr_scheduler = ReduceLROnPlateau(self._optimizer, mode='min', patience=3)
 
     @property
@@ -55,7 +55,7 @@ class Trainer:
         logging_outputs = list(logging_outputs)
         grad_denominator = sum(sample_sizes)
         self.multiply_grad(args.distributed_world_size/float(grad_denominator))
-        clip_grad_norm_(self._model.parameters(), args.max_grad_norm)
+        max_norm = clip_grad_norm_(self._model.parameters(), args.max_grad_norm)
         self._optimizer.step()
 
         train_loss = loss.item()*args.distributed_world_size/float(grad_denominator)
