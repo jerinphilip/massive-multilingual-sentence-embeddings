@@ -18,6 +18,7 @@ class Checkpoint:
         # Load trainer
         state_dict.update(trainer.state_dict())
         state_dict.update({"update_itr": train_state_dict})
+        state_dict.update({"args": vars(args)})
 
         move_to(state_dict, torch.device("cpu"))
         backup = '{}.old'.format(args.save_path)

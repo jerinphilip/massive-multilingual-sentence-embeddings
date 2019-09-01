@@ -24,6 +24,12 @@ class EmbeddingModel(nn.Module):
         criterion = TCELoss(dictionary)
         return cls(encoder, decoder, generator, criterion)
 
+    def encode(self, _input):
+        encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
+        encoder_outs = encoder_output['encoder_outs']
+        context = encoder_outs[-1, :, :]
+        return context
+
     def get_generator_output(self, _input):
         encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
         decoder_output = self.decoder(_input["tgt_langs"], _input["tgts"], encoder_output)

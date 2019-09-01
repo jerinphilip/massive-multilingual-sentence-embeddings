@@ -30,12 +30,13 @@ function copy {
     done
 }
 
-copy
+# copy
+# exit
 export ILMULTI_CORPUS_ROOT=$DATA
 HOSTNAME=$(hostname)
 
 python3 -m mmse.main                    \
-    --lr 1e-5                           \
+    --lr 1e-4                           \
     --config_file configs/multi.yaml    \
     --max_tokens 2000                   \
     --num_epochs 200                    \

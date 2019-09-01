@@ -20,17 +20,59 @@ def to_tensor(sample, lang_idx, eos_idx, shifted=False):
         idxs.insert(0, eos_idx)
     return torch.LongTensor(idxs), torch.LongTensor([lang_idx])
 
+class RawTextDataset:
+    def __init__(self, corpus, dictionary, tokenizer):
+        self.corpus = corpus
+        self.dictionary = dictionary
+        self.tokenizer = tokenizer
+        self.lengths = []
+        self.samples = []
+        self.load_in_memory()
+
+    def load_in_memory(self):
+        with open(self.corpus.path) as fp:
+            for line in fp:
+                line = line.strip('\n')
+                lang, tokens = self.tokenizer(line, lang=self.corpus.lang)
+                self.lengths.append(len(tokens))
+                self.samples.append(tokens)
+
+        self.lengths = np.array(self.lengths, dtype=np.int32)
+        self.num_samples = len(self.samples)
+
+    @classmethod
+    def build(cls, corpus, dictionary, tokenizer):
+        return cls(corpus, dictionary, tokenizer)
+
+    def __len__(self):
+        return self.num_samples
+
+
+    def __getitem__(self, idx):
+        return self.samples[idx]
+
+
 class ParallelDataset(Dataset):
-    def __init__(self, first, second, tokenizer, dictionary):
+    def __init__(self, first, second, tokenizer, dictionary, impl='lmdb'):
         self.tokenizer = tokenizer
         self.dictionary = dictionary
+        self.impl = impl
         self.first = self._maybe_load(first, dictionary, tokenizer)
         self.second = self._maybe_load(second, dictionary, tokenizer)
         self.lengths = np.maximum(self.first.lengths, self.second.lengths)
 
     def _maybe_load(self, corpus, dictionary, tokenizer):
+        def cls_based_on_impl(impl):
+            if impl=='lmdb': 
+                return LMDBCorpus
+            elif impl=='text': 
+                return RawTextDataset
+            else:
+                raise ValueError('Implementation {} not implemented'.format(impl))
+
+        cls = cls_based_on_impl(self.impl)
         if corpus.path not in _flyweight:
-            _flyweight[corpus.path] = LMDBCorpus.build(corpus, dictionary, tokenizer)
+            _flyweight[corpus.path] = cls.build(corpus, dictionary, tokenizer)
         return _flyweight[corpus.path]
 
     def __len__(self):
