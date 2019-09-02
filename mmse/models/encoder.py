@@ -14,9 +14,9 @@ class Encoder(nn.Module):
                 bidirectional=args.encoder_bidirectional
         )
 
-    def forward(self, sequence, sequence_lengths):
+    def forward(self, src_tokens, src_lengths):
         #TODO(jerin): Add dropout
-        x = self.embed_tokens(sequence)
+        x = self.embed_tokens(src_tokens)
         x = F.dropout(x, p=self.args.dropout, training=self.training)
         batch_size, seq_len, _ = x.size()
         x = x.transpose(0, 1) 
@@ -31,7 +31,7 @@ class Encoder(nn.Module):
         c0 = x.new_zeros(*state_size)
 
         packed_x = nn.utils.rnn.pack_padded_sequence(x, 
-                sequence_lengths.data.tolist())
+                src_lengths.data.tolist())
         
         packed_outs, (h_final, c_final) = self.lstm(packed_x, (h0, c0))
 
@@ -49,6 +49,14 @@ class Encoder(nn.Module):
 
             h_final = combine_bidir(h_final)
             c_final = combine_bidir(c_final)
+
+
+        # Set padded outputs to -inf so they are not selected by max-pooling
+        padding_idx = self.dictionary.pad()
+        padding_mask = src_tokens.eq(padding_idx).t().unsqueeze(-1)
+        if padding_mask.any():
+            x = x.float().masked_fill_(padding_mask, float('-inf')).type_as(x)
+
 
         return {
             "encoder_outs": x,

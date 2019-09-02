@@ -32,6 +32,7 @@ function copy {
 
 # copy
 # exit
+set -x
 export ILMULTI_CORPUS_ROOT=$DATA
 HOSTNAME=$(hostname)
 

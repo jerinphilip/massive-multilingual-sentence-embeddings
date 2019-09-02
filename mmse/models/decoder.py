@@ -30,7 +30,10 @@ class Decoder(nn.Module):
         # print(encoder_outs.size())
 
         # T x B x H
-        context = encoder_outs[-1, :, :]
+        # Max pool to obtain context
+        context, _ = encoder_outs.max(dim=0)
+        # context = encoder_outs[-1, :, :]
+
         batch_size, seqlen = prev_output_tokens.size()
         x = self.embed_tokens(prev_output_tokens)
         x = F.dropout(x, p=self.args.dropout, training=self.training)

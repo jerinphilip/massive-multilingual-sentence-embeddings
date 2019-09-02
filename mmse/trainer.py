@@ -57,6 +57,7 @@ class Trainer:
         self.multiply_grad(args.distributed_world_size/float(grad_denominator))
         max_norm = clip_grad_norm_(self._model.parameters(), args.max_grad_norm)
         self._optimizer.step()
+        torch.cuda.empty_cache()
 
         train_loss = loss.item()*args.distributed_world_size/float(grad_denominator)
         return train_loss
