@@ -1,3 +1,4 @@
+import os
 import lmdb
 import numpy as np
 import pickle
@@ -5,23 +6,46 @@ from collections import namedtuple
 from fairseq.data.dictionary import Dictionary
 import ilmulti as ilm
 from tqdm import tqdm
-import os
 from ..data.lmdb import LMDBCorpus, LMDBCorpusWriter
+from multiprocessing import Pool
+
 
 Corpus = namedtuple('Corpus', 'path lang')
         
-def main(args):
+def build_corpora(corpus):
     tokenizer = ilm.sentencepiece.SentencePieceTokenizer()
-    dictionary = Dictionary.load(args.dict)
     corpus = Corpus(args.path, args.lang)
-    corpus_writer = LMDBCorpusWriter(corpus, dictionary, tokenizer)
-    corpus_writer.build_corpus(corpus, dictionary, tokenizer)
+    corpus_writer = LMDBCorpusWriter(corpus, tokenizer)
+    corpus_writer.build_corpus(corpus, tokenizer)
+
+def unique_corpora(config_file):
+    def load_dataconfig(config_file):
+        with open(config_file) as fp:
+            content = fp.read()
+            data = yaml.load(content)
+            return data
+
+    data = load_dataconfig(config_file)
+    
+    corpora = []
+    for split in ['train', 'dev', 'test']:
+        pairs = pairs_select(data['corpora'], split)
+        srcs, tgts = list(zip(*pairs))
+        corpora.extend(srcs)
+        corpora.extend(tgts)
+
+    corpora = list(set(corpora))
+    corpora = sorted(corpora, key=lambda x: x.path)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--path', type=str, required=True)
-    parser.add_argument('--lang', type=str, required=True)
-    parser.add_argument('--dict', type=str, required=True)
+    parser.add_argument('--config_file', type=str, required=True)
     args = parser.parse_args()
-    main(args)
+    corpora = unique_corpora(args.config_file)
+    cores = os.cpu_count()
+    pool = Pool(processes=cores)
+    pool.map_async(build_corpus, corpora)
+    pool.close()
+    pool.join()
+

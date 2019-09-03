@@ -27,8 +27,8 @@ class EmbeddingModel(nn.Module):
     def encode(self, _input):
         encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
         encoder_outs = encoder_output['encoder_outs']
+
         # Max pooling to match Artetxe et. Al
-        # context = encoder_outs[-1, :, :]
         context, _ = torch.max(encoder_outs, dim=0)
         return context
 

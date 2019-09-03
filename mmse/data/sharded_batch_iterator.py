@@ -36,16 +36,17 @@ class ShardedBatchIterator:
 
         batches = []
 
-        current_length = 0
+        max_length = 0
         batch = []
         for idx, length in paired:
-            if current_length + length <= max_tokens:
+            tentative_max_length = max(length, max_length)
+            if tentative_max_length * (2+len(batch))<= max_tokens:
                 batch.append(idx)
-                current_length += length
+                max_length = max(length, max_length)
             else:
                 batches.append(batch)
                 batch = []
-                current_length = 0
+                max_length = 0
 
         if batch:
             batches.append(batch)

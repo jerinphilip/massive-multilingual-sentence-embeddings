@@ -46,7 +46,7 @@ class LMDBCorpusWriter:
     def write_sample(self, idx, sample):
         self._set(idx, sample.encode())
 
-    def build_corpus(self, corpus, dictionary, tokenizer):
+    def build_corpus(self, corpus, tokenizer):
         writer = LMDBCorpusWriter(corpus)
         def _get(line):
             _lang, tokens = tokenizer(line, corpus.lang)
@@ -77,9 +77,8 @@ class LMDBCorpusWriter:
         self.env.close()
 
 class LMDBCorpus:
-    def __init__(self, corpus, dictionary):
+    def __init__(self, corpus):
         self.corpus = corpus
-        self.dictionary = dictionary
         map_size = LMDBCorpusWriter.corpus_map_size(corpus)
         path = LMDBCorpusWriter.path(corpus)
         # path = '{}.processed.lmdb'.format(corpus.path)
@@ -110,13 +109,13 @@ class LMDBCorpus:
         return tokens
 
     @classmethod
-    def build(cls, corpus, dictionary, tokenizer):
+    def build(cls, corpus, tokenizer):
         cache_path = LMDBCorpusWriter.path(corpus)
         try:
-            return cls(corpus, dictionary)
+            return cls(corpus)
         except:
             writer = LMDBCorpusWriter(corpus) 
-            writer.build_corpus(corpus, dictionary, tokenizer)
+            writer.build_corpus(corpus, tokenizer)
             writer.close()
-            return cls(corpus, dictionary)
+            return cls(corpus)
 

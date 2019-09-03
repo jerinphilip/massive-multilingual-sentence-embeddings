@@ -17,13 +17,13 @@ def add_args(parser):
     # Encoder Parameters
     parser.add_argument('--encoder_embedding_dim', type=int, default=512)
     parser.add_argument('--encoder_hidden_size', type=int, default=512)
-    parser.add_argument('--encoder_num_layers', type=int, default=6)
+    parser.add_argument('--encoder_num_layers', type=int, default=1)
     parser.add_argument('--encoder_bidirectional', type=bool, default=True)
     parser.add_argument('--decoder_embedding_dim', type=int, default=512)
 
     # Set this to 2 * encoder
     parser.add_argument('--decoder_hidden_size', type=int, default=1024)
-    parser.add_argument('--decoder_num_layers', type=int, default=6)
+    parser.add_argument('--decoder_num_layers', type=int, default=1)
     parser.add_argument('--decoder_bidirectional', type=bool, default=False)
     parser.add_argument('--decoder_output_size', type=int, default=1024)
     parser.add_argument('--batch_size', type=int, default=64)

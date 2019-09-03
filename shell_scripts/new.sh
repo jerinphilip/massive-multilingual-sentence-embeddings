@@ -37,9 +37,9 @@ export ILMULTI_CORPUS_ROOT=$DATA
 HOSTNAME=$(hostname)
 
 python3 -m mmse.main                    \
-    --lr 1e-4                           \
+    --lr 1e-3                           \
     --config_file configs/multi.yaml    \
-    --max_tokens 2000                   \
+    --max_tokens 6000                   \
     --num_epochs 200                    \
     --distributed_backend nccl          \
     --distributed_master_addr $HOSTNAME \
