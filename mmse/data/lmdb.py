@@ -58,8 +58,11 @@ class LMDBCorpusWriter:
         lengths = []
         pbar = tqdm(
             enumerate(content), total=len(content),
-            ascii="#", ncols=200, miniters=1000, dynamic_ncols=True
+            ascii="#", ncols=200, miniters=1000, dynamic_ncols=True,
+            desc=corpus.path
         )
+
+        # pbar = enumerate(content)
 
         for idx, line in pbar:
             key = '{}'.format(idx)

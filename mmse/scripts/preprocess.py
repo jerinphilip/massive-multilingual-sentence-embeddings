@@ -8,14 +8,15 @@ import ilmulti as ilm
 from tqdm import tqdm
 from ..data.lmdb import LMDBCorpus, LMDBCorpusWriter
 from multiprocessing import Pool
+from mmse.data.config.utils import pairs_select
+import yaml
 
 
 Corpus = namedtuple('Corpus', 'path lang')
         
-def build_corpora(corpus):
+def build_corpus(corpus):
     tokenizer = ilm.sentencepiece.SentencePieceTokenizer()
-    corpus = Corpus(args.path, args.lang)
-    corpus_writer = LMDBCorpusWriter(corpus, tokenizer)
+    corpus_writer = LMDBCorpusWriter(corpus)
     corpus_writer.build_corpus(corpus, tokenizer)
 
 def unique_corpora(config_file):
@@ -36,6 +37,7 @@ def unique_corpora(config_file):
 
     corpora = list(set(corpora))
     corpora = sorted(corpora, key=lambda x: x.path)
+    return corpora
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -44,8 +46,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
     corpora = unique_corpora(args.config_file)
     cores = os.cpu_count()
+    print(
+        "Building {count} corpus over {cores} cores"
+            .format(cores=cores, count=len(corpora)
+    )
     pool = Pool(processes=cores)
-    pool.map_async(build_corpus, corpora)
-    pool.close()
-    pool.join()
+    pool.map(build_corpus, corpora)
+    # pool.map_async(build_corpus, corpora)
+    # pool.close()
+    # pool.join()
 
