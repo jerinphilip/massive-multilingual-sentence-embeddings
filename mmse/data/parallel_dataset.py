@@ -54,6 +54,7 @@ class RawTextDataset:
 class ParallelDataset(Dataset):
     def __init__(self, first, second, tokenizer, dictionary, impl='lmdb'):
         self.tokenizer = tokenizer
+        self.dictionary = dictionary
         self.impl = impl
         self.first = self._maybe_load(first, tokenizer)
         self.second = self._maybe_load(second, tokenizer)

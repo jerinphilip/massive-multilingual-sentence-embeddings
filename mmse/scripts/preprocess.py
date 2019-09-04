@@ -48,7 +48,7 @@ if __name__ == '__main__':
     cores = os.cpu_count()
     print(
         "Building {count} corpus over {cores} cores"
-            .format(cores=cores, count=len(corpora)
+            .format(cores=cores, count=len(corpora))
     )
     pool = Pool(processes=cores)
     pool.map(build_corpus, corpora)

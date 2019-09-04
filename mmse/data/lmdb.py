@@ -19,7 +19,7 @@ class LMDBCorpusWriter:
 
     @staticmethod
     def corpus_map_size(corpus):
-        scale = 10
+        scale = 20
         size = int(scale*os.path.getsize(corpus.path))
         return size
     
@@ -77,6 +77,7 @@ class LMDBCorpusWriter:
         writer.write_metadata(lengths)
 
     def close(self):
+        self._set("completed", "true")
         self.env.close()
 
 class LMDBCorpus:

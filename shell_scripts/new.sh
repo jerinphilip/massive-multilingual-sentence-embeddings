@@ -39,7 +39,7 @@ HOSTNAME=$(hostname)
 python3 -m mmse.main                    \
     --lr 1e-3                           \
     --config_file configs/multi.yaml    \
-    --max_tokens 6000                   \
+    --max_tokens 12000                   \
     --num_epochs 200                    \
     --distributed_backend nccl          \
     --distributed_master_addr $HOSTNAME \
