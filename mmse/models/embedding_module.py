@@ -30,6 +30,7 @@ class EmbeddingModel(nn.Module):
 
         # Max pooling to match Artetxe et. Al
         context, _ = torch.max(encoder_outs, dim=0)
+        context = torch.nn.functional.normalize(context, dim=1, p=2)
         return context
 
     def get_generator_output(self, _input):

@@ -59,7 +59,7 @@ def select(tags, splits, langs):
 def pairs_select(corpora_config, split):
     ls = []
     if split == 'valid': split = 'dev'
-    for tag, v in corpora_config.items():
+    for tag, v in corpora_config['compile'].items():
         tags = [tag]
         if split in v['splits']:
             splits = [split]
@@ -73,7 +73,14 @@ def pairs_select(corpora_config, split):
 
     unique = list(set(ls))
     unique = sorted(unique, key=sort_key)
-    return unique
+
+    # TODO(jerin) add a full switch all the way up.
+    def _filter(pair):
+        first, second = piar
+        return (second.lang in corpora_config['targets'])
+
+    filtered = list(filter(_filter, unique))
+    return filtered
 
 
 

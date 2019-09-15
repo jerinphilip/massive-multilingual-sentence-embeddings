@@ -16,8 +16,10 @@ Corpus = namedtuple('Corpus', 'path lang')
         
 def build_corpus(corpus):
     tokenizer = ilm.sentencepiece.SentencePieceTokenizer()
-    corpus_writer = LMDBCorpusWriter(corpus)
-    corpus_writer.build_corpus(corpus, tokenizer)
+    # corpus_writer = LMDBCorpusWriter(corpus)
+    # corpus_writer.build_corpus(corpus, tokenizer)
+    corpus = LMDBCorpus.build(corpus, tokenizer)
+
 
 def unique_corpora(config_file):
     def load_dataconfig(config_file):
@@ -52,7 +54,3 @@ if __name__ == '__main__':
     )
     pool = Pool(processes=cores)
     pool.map(build_corpus, corpora)
-    # pool.map_async(build_corpus, corpora)
-    # pool.close()
-    # pool.join()
-

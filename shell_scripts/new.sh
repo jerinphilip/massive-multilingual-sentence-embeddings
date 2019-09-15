@@ -30,17 +30,22 @@ function copy {
     done
 }
 
-# copy
+copy
 # exit
 set -x
 export ILMULTI_CORPUS_ROOT=$DATA
 HOSTNAME=$(hostname)
 
+CONFIG_FILE=configs/multi.yaml
+
+python3 -m mmse.scripts.preprocess --config_file $CONFIG_FILE
+
 python3 -m mmse.main                    \
     --lr 1e-3                           \
-    --config_file configs/multi.yaml    \
-    --max_tokens 12000                   \
+    --config_file $CONFIG_FILE          \
+    --max_tokens 5000                   \
     --num_epochs 200                    \
+    --dropout 0.3                       \
     --distributed_backend nccl          \
     --distributed_master_addr $HOSTNAME \
     --distributed_world_size 4          \
