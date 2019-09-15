@@ -3,7 +3,7 @@ import lmdb
 import numpy as np
 import pickle
 from collections import namedtuple
-from fairseq.data.dictionary import Dictionary
+from mmsee.data.dictionary import Dictionary
 import ilmulti as ilm
 from tqdm import tqdm
 from ..data.lmdb import LMDBCorpus, LMDBCorpusWriter

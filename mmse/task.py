@@ -3,7 +3,7 @@ import yaml
 from .data import ParallelDataset, collate, ShardedBatchIterator
 from .data import MultiwayDataset
 from .trainer import Trainer
-from fairseq.data.dictionary import Dictionary
+from mmse.data.dictionary import Dictionary
 import ilmulti as ilm
 from torch import optim
 from itertools import permutations

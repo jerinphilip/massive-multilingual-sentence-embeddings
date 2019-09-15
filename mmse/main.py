@@ -9,7 +9,7 @@ from mmse.utils import distributed
 from mmse.utils.progress import progress_handler
 from mmse.utils.checkpoint import Checkpoint
 from mmse.utils.logging import prettified
-from fairseq.meters import AverageMeter
+from mmse.utils.meters import AverageMeter
 
 def update_state(epoch, loss_meter, loss, batch, state_dict):
     B, T = batch["batch_size"], batch["tgt_num_tokens"]

@@ -76,7 +76,7 @@ def pairs_select(corpora_config, split):
 
     # TODO(jerin) add a full switch all the way up.
     def _filter(pair):
-        first, second = piar
+        first, second = pair
         return (second.lang in corpora_config['targets'])
 
     filtered = list(filter(_filter, unique))
