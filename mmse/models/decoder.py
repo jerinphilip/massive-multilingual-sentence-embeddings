@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from .model_utils import bottleneck
 
 class Decoder(nn.Module):
     def __init__(self, args, embed_tokens, dictionary):
@@ -30,8 +31,7 @@ class Decoder(nn.Module):
 
         # T x B x H
         # Max pool to obtain context
-        context, _ = encoder_outs.max(dim=0)
-        context = F.normalize(context, dim=1, p=2)
+        context = bottleneck(encoder_outs)
 
         batch_size, seqlen = prev_output_tokens.size()
         x = self.embed_tokens(prev_output_tokens)

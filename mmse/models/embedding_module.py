@@ -4,6 +4,7 @@ from .encoder import Encoder
 from .decoder import Decoder
 from .generator import Generator
 from .tce_loss import TCELoss
+from .model_utils import bottleneck
 
 class EmbeddingModel(nn.Module):
     def __init__(self, encoder, decoder, generator, criterion):
@@ -29,9 +30,7 @@ class EmbeddingModel(nn.Module):
         encoder_outs = encoder_output['encoder_outs']
 
         # Max pooling to match Artetxe et. Al
-        context, _ = torch.max(encoder_outs, dim=0)
-        context = torch.nn.functional.normalize(context, dim=1, p=2)
-        return context
+        return bottleneck(encoder_outs)
 
     def get_generator_output(self, _input):
         encoder_output = self.encoder(_input["srcs"], _input["src_lens"])
